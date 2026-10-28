@@ -3,6 +3,7 @@ import { Pill } from '@/components/app/status-badge';
 import { DataTable } from '@/components/data-table';
 import type { Column, FilterOption, TableData } from '@/components/data-table';
 import { Card, CardContent } from '@/components/ui/card';
+import { useCan } from '@/hooks/use-can';
 import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -122,6 +123,7 @@ export default function InventoryIndex({
     categories: Option[];
     brands: Option[];
 }) {
+    const can = useCan();
     const toOptions = (items: Option[]): FilterOption[] =>
         items.map((item) => ({ value: String(item.id), label: item.name }));
     // The server sends no cost without the cost permission.
@@ -203,7 +205,7 @@ export default function InventoryIndex({
                             options: toOptions(brands),
                         },
                     ]}
-                    exportable
+                    exportable={can('inventory.export')}
                     empty="Chưa có hàng trong kho."
                 />
             </div>

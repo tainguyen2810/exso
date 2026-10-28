@@ -8,13 +8,39 @@ const tones = {
     danger: 'border-destructive/30 bg-destructive/5 text-destructive',
 };
 
+export type Tone = keyof typeof tones;
+
+/** Status value → [label, pill tone], e.g. { draft: ['Nháp', 'warning'] }. */
+export type StatusMap = Record<string, [string, Tone]>;
+
+/** Filter / tab options of a status map. */
+export const statusOptions = (statuses: StatusMap) =>
+    Object.entries(statuses).map(([value, [label]]) => ({ value, label }));
+
+/** The pill of one status from a status map. */
+export function StatusPill({
+    statuses,
+    value,
+}: {
+    statuses: StatusMap;
+    value: string | null | undefined;
+}) {
+    if (!value) {
+        return null;
+    }
+
+    const [label, tone] = statuses[value] ?? [value, 'neutral'];
+
+    return <Pill tone={tone}>{label}</Pill>;
+}
+
 /** Rounded status pill like Sapo's ("Đang hoạt động" in green). */
 export function Pill({
     tone = 'neutral',
     className,
     children,
 }: {
-    tone?: keyof typeof tones;
+    tone?: Tone;
     className?: string;
     children: React.ReactNode;
 }) {
