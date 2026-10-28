@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -17,10 +18,13 @@ export function ConfirmDelete({
     url,
     title,
     description,
+    trigger,
 }: {
     url: string;
     title: string;
     description: string;
+    /** Custom button, e.g. Sapo's red "Xóa …" at the bottom of a form. */
+    trigger?: ReactNode;
 }) {
     const [processing, setProcessing] = useState(false);
     const [open, setOpen] = useState(false);
@@ -28,14 +32,16 @@ export function ConfirmDelete({
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive"
-                    aria-label="Xóa"
-                >
-                    <Trash2 className="size-4" />
-                </Button>
+                {trigger ?? (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label="Xóa"
+                    >
+                        <Trash2 className="size-4" />
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent>
                 <DialogTitle>{title}</DialogTitle>

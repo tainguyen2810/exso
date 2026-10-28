@@ -1,10 +1,13 @@
 import { Head, useForm } from '@inertiajs/react';
-import { DocumentForm } from '@/components/app/document-form';
+import { DocumentForm, FormSection } from '@/components/app/document-form';
+import { ConfirmDelete } from '@/components/app/confirm-delete';
 import InputError from '@/components/input-error';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useCan } from '@/hooks/use-can';
 import {
     Table,
     TableBody,
@@ -23,6 +26,7 @@ type Props = {
 };
 
 export default function RoleForm({ role, modules, actions }: Props) {
+    const can = useCan();
     const form = useForm({
         name: role?.name ?? '',
         permissions: role?.permissions ?? ([] as string[]),
@@ -56,26 +60,45 @@ export default function RoleForm({ role, modules, actions }: Props) {
             <DocumentForm
                 title={title}
                 backHref="/roles"
+                backLabel="Quay lại danh sách vai trò"
                 onSubmit={submit}
+                actions={
+                    role &&
+                    can('roles.delete') && (
+                        <ConfirmDelete
+                            url={`/roles/${role.id}`}
+                            title={`Xóa vai trò ${role.name}?`}
+                            description="Chỉ xóa được vai trò chưa gán cho nhân viên nào."
+                            trigger={
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="border-destructive text-destructive hover:bg-destructive/5 hover:text-destructive"
+                                >
+                                    Xóa vai trò
+                                </Button>
+                            }
+                        />
+                    )
+                }
                 processing={form.processing}
             >
-                <Card>
-                    <CardContent className="grid max-w-md gap-2">
-                        <Label htmlFor="name">Tên vai trò *</Label>
-                        <Input
-                            id="name"
-                            value={form.data.name}
-                            onChange={(e) =>
-                                form.setData('name', e.target.value)
-                            }
-                            placeholder="VD: Thu ngân ca tối"
-                            autoFocus
-                        />
-                        <InputError message={form.errors.name} />
-                    </CardContent>
-                </Card>
-                <Card className="gap-0 pb-0">
-                    <CardHeader className="flex flex-row items-center justify-between pb-4">
+                <FormSection
+                    title="Thông tin vai trò"
+                    className="max-w-md gap-2"
+                >
+                    <Label htmlFor="name">Tên vai trò *</Label>
+                    <Input
+                        id="name"
+                        value={form.data.name}
+                        onChange={(e) => form.setData('name', e.target.value)}
+                        placeholder="VD: Thu ngân ca tối"
+                        autoFocus
+                    />
+                    <InputError message={form.errors.name} />
+                </FormSection>
+                <Card className="gap-0 py-0">
+                    <CardHeader className="flex flex-row items-center justify-between border-b px-5 py-4">
                         <CardTitle>Phân quyền</CardTitle>
                         <label className="flex items-center gap-2 text-sm">
                             <Checkbox

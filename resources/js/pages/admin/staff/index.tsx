@@ -1,8 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Plus } from 'lucide-react';
-import { ConfirmDelete } from '@/components/app/confirm-delete';
-import { PageHeader } from '@/components/app/page-header';
-import { StatusBadge } from '@/components/app/status-badge';
+import { Plus } from 'lucide-react';
+import { RecordLink } from '@/components/app/record-link';
+import { Pill, StatusBadge } from '@/components/app/status-badge';
 import { DataTable } from '@/components/data-table';
 import type {
     BulkAction,
@@ -10,7 +9,6 @@ import type {
     FilterDef,
     TableData,
 } from '@/components/data-table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCan } from '@/hooks/use-can';
 import { formatDateTime } from '@/lib/format';
@@ -43,11 +41,14 @@ const columns: Column<Member>[] = [
         fixed: true,
         cell: (member) => (
             <>
-                <div className="font-medium">
-                    {member.name}
-                    {member.is_owner && (
-                        <Badge className="ml-2">Chủ cửa hàng</Badge>
-                    )}
+                <div className="flex items-center gap-2">
+                    <RecordLink
+                        href={`/staff/${member.id}/edit`}
+                        permission="staff.update"
+                    >
+                        {member.name}
+                    </RecordLink>
+                    {member.is_owner && <Pill tone="info">Chủ cửa hàng</Pill>}
                 </div>
                 <div className="text-xs text-muted-foreground">
                     {member.email}
@@ -166,20 +167,7 @@ export default function StaffIndex({
     return (
         <>
             <Head title="Nhân viên" />
-            <div className="space-y-4 p-4 md:p-6">
-                <PageHeader
-                    title="Nhân viên"
-                    description="Tài khoản đăng nhập, vai trò và chi nhánh làm việc của từng người."
-                    actions={
-                        can('staff.create') && (
-                            <Button asChild>
-                                <Link href="/staff/create">
-                                    <Plus /> Thêm nhân viên
-                                </Link>
-                            </Button>
-                        )
-                    }
-                />
+            <div className="px-4 pt-5 pb-10 md:px-8">
                 <DataTable
                     tableKey="staff"
                     data={staff}
@@ -191,27 +179,15 @@ export default function StaffIndex({
                     canSelect={(member) => !member.is_owner}
                     exportable
                     empty="Không có nhân viên nào."
-                    rowActions={(member) => (
-                        <>
-                            {can('staff.update') && (
-                                <Button variant="ghost" size="icon" asChild>
-                                    <Link
-                                        href={`/staff/${member.id}/edit`}
-                                        aria-label="Sửa"
-                                    >
-                                        <Pencil className="size-4" />
-                                    </Link>
-                                </Button>
-                            )}
-                            {can('staff.delete') && !member.is_owner && (
-                                <ConfirmDelete
-                                    url={`/staff/${member.id}`}
-                                    title={`Xóa nhân viên ${member.name}?`}
-                                    description="Nếu chỉ tạm nghỉ, hãy chuyển trạng thái sang Ngừng hoạt động thay vì xóa."
-                                />
-                            )}
-                        </>
-                    )}
+                    actions={
+                        can('staff.create') && (
+                            <Button asChild>
+                                <Link href="/staff/create">
+                                    <Plus /> Thêm nhân viên
+                                </Link>
+                            </Button>
+                        )
+                    }
                 />
             </div>
         </>

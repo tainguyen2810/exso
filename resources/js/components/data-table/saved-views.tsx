@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { Bookmark, Plus, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
@@ -11,29 +11,78 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import type { SavedView, TableQuery } from './types';
 
-/** "Bộ lọc đã lưu": each user keeps their own named search/filter/sort per list. */
-export function SavedViews({
-    tableKey,
-    views,
-    query,
+/** Whether a saved view is what the list currently shows. */
+export function isCurrentView(view: SavedView, query: TableQuery): boolean {
+    const same = (a: unknown, b: unknown) =>
+        JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    const filter = (value: Record<string, unknown> | undefined) =>
+        value && Object.keys(value).length > 0
+            ? Object.fromEntries(
+                  Object.entries(value).sort(([a], [b]) => a.localeCompare(b)),
+              )
+            : null;
+
+    return (
+        (view.query.search ?? '') === query.search &&
+        same(filter(view.query.filter), filter(query.filter)) &&
+        (!view.query.sort || view.query.sort === query.sort)
+    );
+}
+
+/**
+ * A saved filter shown as a tab, like Sapo. Each user keeps their own
+ * named search/filter/sort per list.
+ */
+export function SavedViewTab({
+    view,
+    active,
     onApply,
 }: {
+    view: SavedView;
+    active: boolean;
+    onApply: () => void;
+}) {
+    return (
+        <span
+            className={cn(
+                'group -mb-px inline-flex h-12 items-center gap-1 border-b-2 border-transparent text-sm whitespace-nowrap text-muted-foreground hover:text-foreground',
+                active && 'border-primary font-medium text-primary',
+            )}
+        >
+            <button type="button" onClick={onApply}>
+                {view.name}
+            </button>
+            <button
+                type="button"
+                aria-label={`Xóa bộ lọc ${view.name}`}
+                className="rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-destructive focus:opacity-100"
+                onClick={() =>
+                    router.delete(`/saved-views/${view.id}`, {
+                        preserveScroll: true,
+                        preserveState: true,
+                    })
+                }
+            >
+                <X className="size-3.5" />
+            </button>
+        </span>
+    );
+}
+
+/** "Lưu bộ lọc": saves the current search/filter/sort as a new tab. */
+export function SaveViewButton({
+    tableKey,
+    query,
+    disabled,
+}: {
     tableKey: string;
-    views: SavedView[];
     query: TableQuery;
-    onApply: (view: SavedView) => void;
+    disabled?: boolean;
 }) {
     const [open, setOpen] = useState(false);
     const [name, setName] = useState('');
@@ -70,57 +119,21 @@ export function SavedViews({
 
     return (
         <>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                        <Bookmark />
-                        <span className="hidden sm:inline">Bộ lọc đã lưu</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                    <DropdownMenuLabel>Bộ lọc đã lưu</DropdownMenuLabel>
-                    {views.length === 0 && (
-                        <p className="px-2 pb-2 text-xs text-muted-foreground">
-                            Chưa có. Lọc danh sách rồi bấm "Lưu bộ lọc hiện
-                            tại".
-                        </p>
-                    )}
-                    {views.map((view) => (
-                        <DropdownMenuItem
-                            key={view.id}
-                            onSelect={() => onApply(view)}
-                            className="justify-between"
-                        >
-                            <span className="truncate">{view.name}</span>
-                            <button
-                                type="button"
-                                aria-label={`Xóa bộ lọc ${view.name}`}
-                                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-destructive"
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    router.delete(`/saved-views/${view.id}`, {
-                                        preserveScroll: true,
-                                        preserveState: true,
-                                    });
-                                }}
-                            >
-                                <X className="size-3.5" />
-                            </button>
-                        </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => setOpen(true)}>
-                        <Plus /> Lưu bộ lọc hiện tại
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+                variant="outline"
+                disabled={disabled}
+                onClick={() => setOpen(true)}
+                title="Lưu điều kiện lọc hiện tại thành một tab"
+            >
+                Lưu bộ lọc
+            </Button>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent>
                     <form onSubmit={save} className="space-y-4">
                         <DialogTitle>Lưu bộ lọc</DialogTitle>
                         <DialogDescription>
-                            Lưu từ khóa, điều kiện lọc và cách sắp xếp hiện tại
-                            để mở lại nhanh. Chỉ bạn thấy bộ lọc này.
+                            Từ khóa, điều kiện lọc và cách sắp xếp hiện tại sẽ
+                            thành một tab để mở lại nhanh. Chỉ bạn thấy tab này.
                         </DialogDescription>
                         <div className="grid gap-2">
                             <Label htmlFor="view-name">Tên bộ lọc</Label>
@@ -131,6 +144,7 @@ export function SavedViews({
                                     setName(event.target.value)
                                 }
                                 placeholder="VD: Nhân viên đang nghỉ"
+                                maxLength={100}
                                 autoFocus
                             />
                             <InputError message={error} />

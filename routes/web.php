@@ -7,7 +7,9 @@ use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\BranchSwitchController;
 use App\Http\Controllers\Install\InstallController;
 use App\Http\Controllers\SavedViewController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('install', [InstallController::class, 'show'])->name('install.show');
 Route::post('install', [InstallController::class, 'store'])->name('install.store');
@@ -22,23 +24,53 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('saved-views', [SavedViewController::class, 'store'])->name('saved-views.store');
     Route::delete('saved-views/{savedView}', [SavedViewController::class, 'destroy'])->name('saved-views.destroy');
 
-    // Business modules built in later phases. Each page is already guarded by
-    // its permission so roles can be set up now.
+    // Pages of later phases, shown as "coming soon" so the menu matches the
+    // final layout. Each is guarded by its permission so roles can be set up
+    // now. A phase that builds a page removes its line here.
     $upcoming = [
-        'products' => ['Sản phẩm', 'G2'],
-        'inventory' => ['Kho hàng', 'G2'],
-        'customers' => ['Khách hàng', 'G3'],
-        'orders' => ['Đơn hàng', 'G3'],
-        'pos' => ['Bán tại quầy', 'G3'],
-        'cashbook' => ['Sổ quỹ', 'G4'],
-        'reports' => ['Báo cáo', 'G4'],
+        'orders/create' => ['Tạo đơn và giao hàng', 'G3', 'orders.create'],
+        'orders' => ['Danh sách đơn hàng', 'G3', 'orders.view'],
+        'returns' => ['Khách trả hàng', 'G3', 'orders.view'],
+        'e-invoices' => ['Hóa đơn điện tử', 'G7', 'orders.view'],
+        'shipping' => ['Tổng quan vận chuyển', 'G6', 'orders.view'],
+        'shipments' => ['Quản lý vận đơn', 'G6', 'orders.view'],
+        'cod-reconciliations' => ['Đối soát COD và phí', 'G6', 'orders.view'],
+        'shipping/partners' => ['Kết nối đối tác vận chuyển', 'G6', 'orders.view'],
+        'products' => ['Danh sách sản phẩm', 'G2', 'products.view'],
+        'inventory' => ['Quản lý kho', 'G2', 'inventory.view'],
+        'purchase-orders' => ['Đặt hàng nhập', 'G2', 'inventory.view'],
+        'purchase-receipts' => ['Nhập hàng', 'G2', 'inventory.view'],
+        'stocktakes' => ['Kiểm hàng', 'G2', 'inventory.view'],
+        'stock-transfers' => ['Chuyển hàng', 'G2', 'inventory.view'],
+        'suppliers' => ['Nhà cung cấp', 'G2', 'inventory.view'],
+        'cost-adjustments' => ['Điều chỉnh giá vốn', 'G2', 'inventory.view'],
+        'customers' => ['Danh sách khách hàng', 'G3', 'customers.view'],
+        'customer-groups' => ['Nhóm khách hàng', 'G3', 'customers.view'],
+        'cashbook/receipts' => ['Phiếu thu', 'G4', 'cashbook.view'],
+        'cashbook/payments' => ['Phiếu chi', 'G4', 'cashbook.view'],
+        'cashbook' => ['Sổ quỹ', 'G4', 'cashbook.view'],
+        'reports' => ['Tổng quan báo cáo', 'G4', 'reports.view'],
+        'reports/sales' => ['Báo cáo bán hàng', 'G4', 'reports.view'],
+        'reports/purchases' => ['Báo cáo nhập hàng', 'G4', 'reports.view'],
+        'reports/inventory' => ['Báo cáo kho', 'G4', 'reports.view'],
+        'reports/finance' => ['Báo cáo tài chính', 'G4', 'reports.view'],
+        'reports/customers' => ['Báo cáo khách hàng', 'G4', 'reports.view'],
+        'pos' => ['Bán tại quầy', 'G3', 'pos.view'],
+        'marketplaces' => ['Sàn TMĐT', 'G7', 'orders.view'],
     ];
 
-    foreach ($upcoming as $module => [$title, $phase]) {
-        Route::inertia($module, 'coming-soon', ['title' => $title, 'phase' => $phase])
-            ->middleware("can:{$module}.view")
-            ->name("{$module}.index");
+    foreach ($upcoming as $path => [$title, $phase, $permission]) {
+        Route::inertia($path, 'coming-soon', ['title' => $title, 'phase' => $phase])
+            ->middleware("can:{$permission}")
+            ->name(str_replace('/', '.', $path).(str_contains($path, '/') ? '' : '.index'));
     }
+
+    // Hub of store settings; open to anyone who can see one of its pages.
+    Route::get('config', function (Request $request) {
+        abort_unless($request->user()?->canAny(['settings.view', 'branches.view', 'staff.view', 'roles.view', 'activity_log.view']), 403);
+
+        return Inertia::render('config/index');
+    })->name('config.index');
 
     Route::get('staff', [StaffController::class, 'index'])->middleware('can:staff.view')->name('staff.index');
     Route::post('staff/bulk', [StaffController::class, 'bulk'])->middleware('can:staff.update')->name('staff.bulk');
