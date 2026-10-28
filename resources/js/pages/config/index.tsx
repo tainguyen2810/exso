@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Card } from '@/components/ui/card';
-import { configEntries } from '@/config/menu';
+import { configEntries, configGroups } from '@/config/menu';
 import type { ConfigEntry } from '@/config/menu';
 import { useCan } from '@/hooks/use-can';
 
@@ -12,12 +12,27 @@ export default function ConfigIndex() {
     return (
         <>
             <Head title="Cấu hình" />
-            <div className="px-4 pt-5 pb-10 md:px-8">
-                <Card className="grid gap-0 py-2 sm:grid-cols-2 xl:grid-cols-3">
-                    {entries.map((entry) => (
-                        <Entry key={entry.href} entry={entry} />
-                    ))}
-                </Card>
+            <div className="grid gap-6 px-4 pt-5 pb-10 md:px-8">
+                {configGroups.map((group) => {
+                    const items = entries.filter(
+                        (entry) => entry.group === group,
+                    );
+
+                    return (
+                        items.length > 0 && (
+                            <section key={group}>
+                                <h2 className="mb-3 text-base font-medium">
+                                    {group}
+                                </h2>
+                                <Card className="grid gap-0 py-2 sm:grid-cols-2 xl:grid-cols-3">
+                                    {items.map((entry) => (
+                                        <Entry key={entry.href} entry={entry} />
+                                    ))}
+                                </Card>
+                            </section>
+                        )
+                    );
+                })}
             </div>
         </>
     );

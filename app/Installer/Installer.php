@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Settings\SettingsRepository;
+use App\Support\Settings\StoreDefaults;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -128,6 +129,7 @@ class Installer
             app(SettingsRepository::class)->setMany([
                 'store.name' => $data['store_name'],
             ]);
+            StoreDefaults::install();
 
             $branch = Branch::query()->create([
                 'code' => 'CN01',

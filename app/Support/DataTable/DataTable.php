@@ -2,6 +2,7 @@
 
 namespace App\Support\DataTable;
 
+use App\Models\FileLog;
 use App\Models\SavedView;
 use App\Support\Excel\ExcelExport;
 use Closure;
@@ -200,10 +201,24 @@ class DataTable
      */
     public function export(string $filename, array $columns): StreamedResponse
     {
-        return ExcelExport::download($filename, array_keys($columns), function () use ($columns): iterable {
-            foreach ($this->query()->lazy(500) as $model) {
-                yield array_map(fn (Closure $value): mixed => $value($model), array_values($columns));
+        // Logged on "Xuất/nhập file"; the row count is filled in once streamed.
+        $log = FileLog::record($this->key, 'export', str_ends_with($filename, '.xlsx') ? $filename : "{$filename}.xlsx");
+
+        return ExcelExport::download($filename, array_keys($columns), function () use ($columns, $log): iterable {
+            $rows = 0;
+
+            try {
+                foreach ($this->query()->lazy(500) as $model) {
+                    yield array_map(fn (Closure $value): mixed => $value($model), array_values($columns));
+                    $rows++;
+                }
+            } catch (\Throwable $e) {
+                $log->update(['status' => 'failed', 'rows' => $rows, 'message' => 'Xuất file bị lỗi.']);
+
+                throw $e;
             }
+
+            $log->update(['status' => 'done', 'rows' => $rows]);
         });
     }
 
