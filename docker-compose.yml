@@ -1,0 +1,31 @@
+# Dev services only: MySQL, Redis and Mailpit. The app itself runs on your
+# machine with `composer dev` (or under WAMP). Production does not need Docker.
+services:
+    mysql:
+        image: mysql:8.4
+        ports:
+            - '${FORWARD_DB_PORT:-3306}:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-secret}'
+            MYSQL_DATABASE: '${DB_DATABASE:-exso}'
+        command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+        volumes:
+            - mysql-data:/var/lib/mysql
+        healthcheck:
+            test: ['CMD', 'mysqladmin', 'ping', '-p${DB_PASSWORD:-secret}']
+            retries: 5
+            timeout: 5s
+
+    redis:
+        image: redis:7-alpine
+        ports:
+            - '${FORWARD_REDIS_PORT:-6379}:6379'
+
+    mailpit:
+        image: axllent/mailpit:latest
+        ports:
+            - '${FORWARD_MAILPIT_PORT:-1025}:1025'
+            - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+
+volumes:
+    mysql-data:

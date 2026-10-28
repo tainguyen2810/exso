@@ -1,0 +1,172 @@
+<?php
+
+namespace App\Installer;
+
+use App\Models\Tenant;
+use App\Models\User;
+use App\Support\Settings\SettingsRepository;
+use App\Tenancy\TenantContext;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Throwable;
+
+class Installer
+{
+    /**
+     * .env values written only after a successful install, so a failed
+     * attempt leaves the file untouched (and `artisan serve` does not
+     * restart mid-request when .env changes).
+     *
+     * @var array<string, string>
+     */
+    protected array $pendingEnv = [];
+
+    public function __construct(protected TenantContext $tenancy) {}
+
+    public function isInstalled(): bool
+    {
+        $flag = config('installer.installed');
+
+        if ($flag !== null && $flag !== '') {
+            return filter_var($flag, FILTER_VALIDATE_BOOL);
+        }
+
+        return File::exists(config('installer.marker'));
+    }
+
+    /**
+     * @return list<array{label: string, ok: bool}>
+     */
+    public function requirements(): array
+    {
+        $checks = [[
+            'label' => 'PHP >= '.config('installer.php_version').' (đang dùng '.PHP_VERSION.')',
+            'ok' => version_compare(PHP_VERSION, config('installer.php_version'), '>='),
+        ]];
+
+        foreach (config('installer.extensions') as $extension) {
+            $checks[] = ['label' => "Extension {$extension}", 'ok' => extension_loaded($extension)];
+        }
+
+        foreach (config('installer.writable') as $path) {
+            $checks[] = ['label' => "Ghi được thư mục {$path}", 'ok' => is_writable(base_path($path))];
+        }
+
+        $checks[] = ['label' => 'Ghi được file .env', 'ok' => $this->envIsWritable()];
+
+        return $checks;
+    }
+
+    public function meetsRequirements(): bool
+    {
+        return collect($this->requirements())->every(fn (array $check): bool => $check['ok']);
+    }
+
+    /**
+     * Point the app at the given MySQL database and check that it answers.
+     *
+     * @param  array{host: string, port: int|string, database: string, username: string, password: ?string}  $db
+     */
+    public function configureDatabase(array $db): void
+    {
+        $previous = [
+            'database.default' => config('database.default'),
+            'database.connections.mysql' => config('database.connections.mysql'),
+        ];
+
+        config([
+            'database.default' => 'mysql',
+            'database.connections.mysql.host' => $db['host'],
+            'database.connections.mysql.port' => $db['port'],
+            'database.connections.mysql.database' => $db['database'],
+            'database.connections.mysql.username' => $db['username'],
+            'database.connections.mysql.password' => $db['password'] ?? '',
+        ]);
+
+        DB::purge('mysql');
+
+        try {
+            DB::connection('mysql')->getPdo();
+        } catch (Throwable $e) {
+            config($previous);
+            DB::purge('mysql');
+
+            throw $e;
+        }
+
+        $this->pendingEnv = [
+            'DB_CONNECTION' => 'mysql',
+            'DB_HOST' => $db['host'],
+            'DB_PORT' => (string) $db['port'],
+            'DB_DATABASE' => $db['database'],
+            'DB_USERNAME' => $db['username'],
+            'DB_PASSWORD' => $db['password'] ?? '',
+        ];
+    }
+
+    /**
+     * Create the schema, the store (tenant 1) and its first admin.
+     *
+     * @param  array{store_name: string, admin_name: string, admin_email: string, admin_password: string, app_url?: string}  $data
+     */
+    public function install(array $data): User
+    {
+        Artisan::call('migrate', ['--force' => true]);
+
+        $tenant = Tenant::query()->create([
+            'name' => $data['store_name'],
+            'slug' => 'main',
+            'status' => 'active',
+        ]);
+
+        $admin = $this->tenancy->run($tenant, function () use ($data): User {
+            app(SettingsRepository::class)->setMany([
+                'store.name' => $data['store_name'],
+            ]);
+
+            $admin = new User([
+                'name' => $data['admin_name'],
+                'email' => $data['admin_email'],
+                'password' => $data['admin_password'],
+            ]);
+            $admin->email_verified_at = now();
+            $admin->save();
+
+            return $admin;
+        });
+
+        if (isset($data['app_url'])) {
+            $this->pendingEnv['APP_URL'] = $data['app_url'];
+        }
+
+        if ($this->pendingEnv !== []) {
+            $this->env()->set($this->pendingEnv);
+        }
+
+        $this->markInstalled();
+
+        return $admin;
+    }
+
+    public function markInstalled(): void
+    {
+        File::ensureDirectoryExists(dirname(config('installer.marker')));
+        File::put(config('installer.marker'), (string) json_encode([
+            'installed_at' => now()->toIso8601String(),
+            'version' => config('app.version'),
+        ], JSON_PRETTY_PRINT));
+    }
+
+    protected function env(): EnvWriter
+    {
+        return new EnvWriter(app()->environmentFilePath());
+    }
+
+    protected function envIsWritable(): bool
+    {
+        $path = app()->environmentFilePath();
+
+        return file_exists($path) ? is_writable($path) : is_writable(dirname($path));
+    }
+}

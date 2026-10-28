@@ -1,0 +1,59 @@
+# EXSO — phần mềm bán hàng của ITSO
+
+Phần mềm quản lý bán hàng đa kênh, tham khảo nghiệp vụ Sapo GO (đơn hàng, kho, khách hàng, sổ quỹ, báo cáo).
+Tài liệu thiết kế gốc: "Thiết kế phần mềm bán hàng (tham khảo Sapo GO)". Làm theo giai đoạn G0 → G8, mỗi giai đoạn một nhánh + PR.
+
+## Stack
+
+Laravel 13, PHP 8.3+, MySQL 8, Inertia 3 + React 19 + TypeScript, Tailwind 4, shadcn/ui, Pest 4.
+Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module). Redis tùy chọn.
+
+## Chế độ chạy
+
+- `APP_MODE=standalone` (mặc định): tự cài kiểu WordPress, 1 cửa hàng (tenant), có trình cài `/install`.
+- `APP_MODE=saas`: nhiều cửa hàng, nhận biết theo `<slug>.TENANCY_CENTRAL_DOMAIN` hoặc tên miền riêng (`tenants.domain`).
+- Phải chạy được trên WAMP / hosting PHP thường: không phụ thuộc Docker, SSH hay Supervisor; chỉ cần cron `schedule:run`.
+
+## Lệnh
+
+- Dev: `composer dev` (server + vite + queue + log). Dịch vụ phụ: `docker compose up -d` (MySQL, Redis, Mailpit) — tùy chọn.
+- Test: `php artisan test` — chạy trước mọi commit.
+- Lint PHP: `composer lint` (Pint). Kiểm tra JS/TS: `npm run check`, `npm run types:check`. PHPStan: `composer types:check`.
+- Cài nhanh không qua web: đặt `INSTALLER_INSTALLED=true`, `php artisan migrate`, tạo tenant + user bằng tinker.
+
+## Cấu trúc
+
+- `app/` = core: `Tenancy/` (TenantContext, BelongsToTenant, TenantScope), `Installer/`, `Support/Hooks` (Hook::filter), `Support/Settings` (settings theo tenant).
+- `Modules/<Module>/` = nghiệp vụ (từ G2): Models, Services, Http, Database/Migrations, resources/js, module.json.
+- `resources/js/components/ui` (shadcn), `resources/js/components` (component app), `resources/js/pages` (trang Inertia).
+- Trình cài: `routes/web.php` (`/install`), `resources/views/install` (Blade thuần, không cần build asset).
+
+## Quy tắc nghiệp vụ (bắt buộc)
+
+- Tiền: BIGINT đơn vị đồng, không dùng float.
+- Tồn kho chỉ thay đổi qua InventoryService, trong DB transaction + `lockForUpdate`, luôn ghi `stock_movements`.
+- Server tính lại tổng tiền đơn, không tin số từ client.
+- Mọi bảng nghiệp vụ có `tenant_id` (+ `branch_id` từ G1) và model dùng trait `BelongsToTenant`. Không query vượt tenant; nếu thật sự cần thì dùng `withoutGlobalScope(TenantScope::class)` và ghi chú lý do.
+- Thiếu tenant trong chế độ SaaS thì query trả rỗng (fail closed). Job/command chạy cho một cửa hàng phải bọc trong `tenancy()->run($tenant, ...)`.
+- Mọi route kiểm tra quyền bằng Policy (từ G1).
+- Index bắt đầu bằng `tenant_id` cho các bảng lớn.
+
+## Quy tắc nâng cấp
+
+- Semver + CHANGELOG.md. Migration chỉ thêm, không sửa migration đã phát hành (G0 chưa phát hành nên còn sửa được).
+- Đổi cột qua 2 bản: thêm cột mới + chuyển dữ liệu, bản sau mới bỏ cột cũ.
+- Module không sửa file core, chỉ dùng Events (việc "sau khi") và `Hook::filter()` (chỉnh giá trị).
+- Cấu hình nghiệp vụ lưu bảng `settings` qua `settings('nhom.khoa')`, không thêm biến `.env` mới nếu không bắt buộc.
+
+## Giao diện
+
+- Tiếng Việt; số 1.234.567; ngày dd/MM/yyyy; múi giờ Asia/Ho_Chi_Minh.
+- Bố cục tham khảo Sapo (sidebar tối, topbar mỏng, nội dung dạng thẻ) nhưng dùng tên, logo, màu riêng.
+- Trang danh sách dùng DataTable; trang tạo/sửa dùng DocumentForm 2 cột (8/4) — làm ở G1b.
+- Phím tắt giữ như Sapo: F1 lưu đơn, F3 tìm sản phẩm, F4 tìm khách, F6 chiết khấu đơn, F7 phí/chi phí, F9 thêm dịch vụ, F10 bộ lọc.
+
+## Cách làm việc
+
+- Mỗi giai đoạn một nhánh `g<n>-<tên>`, kết thúc khi test xanh và đã thử trên trình duyệt.
+- Logic tiền và kho: viết test trước, chạy đến khi xanh.
+- Sau mỗi giai đoạn cập nhật file này với quy ước mới.
