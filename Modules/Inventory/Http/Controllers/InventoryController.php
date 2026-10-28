@@ -76,6 +76,8 @@ class InventoryController extends Controller
             ->sortable($showCost ? ['name', 'sku', 'on_hand', 'reserved', 'cost_price'] : ['name', 'sku', 'on_hand', 'reserved'], 'name');
 
         if ($request->query('export') === 'xlsx') {
+            abort_unless($user->can('inventory.export'), 403);
+
             return $table->export('ton-kho-'.now()->format('Ymd-His'), array_merge([
                 'Mã SKU' => fn (ProductVariant $variant) => $variant->sku,
                 'Tên phiên bản' => fn (ProductVariant $variant) => $variant->name,

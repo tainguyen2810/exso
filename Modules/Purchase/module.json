@@ -1,0 +1,9 @@
+{
+    "name": "Purchase",
+    "alias": "purchase",
+    "description": "Nhập hàng: nhà cung cấp và công nợ, đặt hàng nhập, phiếu nhập hàng, trả hàng nhà cung cấp.",
+    "keywords": [],
+    "priority": 30,
+    "providers": ["Modules\\Purchase\\Providers\\PurchaseServiceProvider"],
+    "files": []
+}

@@ -9,8 +9,8 @@ use Modules\Product\Http\Controllers\ProductImportController;
 
 Route::get('products', [ProductController::class, 'index'])->middleware('can:products.view')->name('products.index');
 Route::post('products/bulk', [ProductController::class, 'bulk'])->middleware('can:products.update')->name('products.bulk');
-Route::get('products/import/template', [ProductImportController::class, 'template'])->middleware('can:products.create')->name('products.import.template');
-Route::post('products/import', [ProductImportController::class, 'store'])->middleware('can:products.create')->name('products.import');
+Route::get('products/import/template', [ProductImportController::class, 'template'])->middleware('can:products.import')->name('products.import.template');
+Route::post('products/import', [ProductImportController::class, 'store'])->middleware('can:products.import')->name('products.import');
 Route::get('products/variants/search', [ProductController::class, 'searchVariants'])->middleware('can:products.view')->name('products.variants.search');
 Route::get('products/barcodes', [BarcodeController::class, 'index'])->middleware('can:products.view')->name('products.barcodes');
 Route::get('products/create', [ProductController::class, 'create'])->middleware('can:products.create')->name('products.create');

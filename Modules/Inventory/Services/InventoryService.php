@@ -67,6 +67,76 @@ class InventoryService
     }
 
     /**
+     * Set the stock of a branch to a counted quantity (stocktake). The
+     * difference is computed under the lock, so a sale made while counting
+     * is not lost. Only for base variants of ordinary goods.
+     *
+     * @param  array{reference?: Model|null, reference_code?: string|null, note?: string|null}  $options
+     * @return array{system: int, difference: int}
+     */
+    public function setOnHand(int $branchId, ProductVariant $variant, int $actual, string $type, array $options = []): array
+    {
+        $this->assertBaseGoods($variant);
+
+        return DB::transaction(function () use ($branchId, $variant, $actual, $type, $options): array {
+            /** @var ProductVariant $locked */
+            $locked = ProductVariant::query()->withTrashed()->with('product')->lockForUpdate()->findOrFail($variant->id);
+            $system = $this->lockInventory($branchId, $locked->id)->on_hand;
+            $difference = $actual - $system;
+
+            if ($difference !== 0) {
+                $movement = $this->moveBase($branchId, $locked, $difference, null, $type, [...$options, 'allow_negative' => true]);
+                DB::afterCommit(fn () => event(new StockChanged([$movement])));
+            }
+
+            return ['system' => $system, 'difference' => $difference];
+        });
+    }
+
+    /**
+     * Set the average cost of a variant by hand ("Điều chỉnh giá vốn"). Writes
+     * a zero-quantity movement so the stock card shows the change.
+     *
+     * @param  array{reference?: Model|null, reference_code?: string|null, note?: string|null}  $options
+     */
+    public function setCost(int $branchId, ProductVariant $variant, int $cost, array $options = []): StockMovement
+    {
+        $this->assertBaseGoods($variant);
+
+        if ($cost < 0) {
+            throw new InvalidArgumentException('Cost cannot be negative.');
+        }
+
+        return DB::transaction(function () use ($branchId, $variant, $cost, $options): StockMovement {
+            /** @var ProductVariant $locked */
+            $locked = ProductVariant::query()->withTrashed()->lockForUpdate()->findOrFail($variant->id);
+            $inventory = $this->lockInventory($branchId, $locked->id);
+            $previous = $locked->cost_price;
+            $locked->forceFill(['cost_price' => $cost])->save();
+            $variant->cost_price = $cost;
+            $reference = $options['reference'] ?? null;
+
+            /** @var StockMovement $movement */
+            $movement = StockMovement::query()->create([
+                'branch_id' => $branchId,
+                'variant_id' => $locked->id,
+                'type' => StockMovement::COST_ADJUSTMENT,
+                'quantity' => 0,
+                'on_hand_after' => $inventory->on_hand,
+                'unit_cost' => $previous,
+                'cost_after' => $cost,
+                'reference_type' => $reference?->getMorphClass(),
+                'reference_id' => $reference?->getKey(),
+                'reference_code' => $options['reference_code'] ?? null,
+                'note' => $options['note'] ?? null,
+                'created_by' => auth()->id(),
+            ]);
+
+            return $movement;
+        });
+    }
+
+    /**
      * Hold stock for an order that is approved but not shipped (Có thể bán goes down).
      */
     public function reserve(int $branchId, ProductVariant $variant, int $quantity): void
@@ -280,6 +350,15 @@ class InventoryService
                 $inventory->forceFill(['reserved' => max(0, $inventory->reserved + $delta)])->save();
             }
         });
+    }
+
+    protected function assertBaseGoods(ProductVariant $variant): void
+    {
+        $variant->loadMissing('product');
+
+        if ($variant->base_variant_id !== null || ! $variant->product->tracksInventory()) {
+            throw new InvalidArgumentException("{$variant->sku} is not a base variant of goods that keep stock.");
+        }
     }
 
     protected function divide(int $quantity, int $ratio): int

@@ -56,6 +56,16 @@ class Permissions
             'inventory' => [
                 'label' => 'Kho hàng', 'group' => 'Sản phẩm',
                 'actions' => ['view', 'create', 'update', 'delete', 'approve', 'export', 'import'],
+                'labels' => ['approve' => 'Cân bằng kho, xuất/nhận chuyển hàng, áp dụng giá vốn'],
+            ],
+            'suppliers' => [
+                'label' => 'Nhà cung cấp', 'group' => 'Sản phẩm',
+                'actions' => ['view', 'create', 'update', 'delete', 'export', 'import'],
+            ],
+            'purchases' => [
+                'label' => 'Đặt hàng nhập, nhập hàng', 'group' => 'Sản phẩm',
+                'actions' => ['view', 'create', 'update', 'delete', 'approve', 'cancel', 'pay', 'export'],
+                'labels' => ['approve' => 'Nhập kho, trả hàng nhập', 'pay' => 'Thanh toán nhà cung cấp'],
             ],
             'customers' => [
                 'label' => 'Khách hàng', 'group' => 'Khách hàng',
@@ -151,13 +161,16 @@ class Permissions
             ],
             'Nhân viên kho' => [
                 'dashboard.view', 'products.view', 'products.create', 'products.update', 'products.export', 'products.import',
-                'inventory.view', 'inventory.create', 'inventory.update', 'inventory.export', 'inventory.import',
+                'inventory.view', 'inventory.create', 'inventory.update', 'inventory.approve', 'inventory.export', 'inventory.import',
+                'suppliers.view', 'suppliers.create', 'suppliers.update',
+                'purchases.view', 'purchases.create', 'purchases.update', 'purchases.approve',
                 'orders.view', 'orders.view_all', 'orders.ship',
             ],
             'Kế toán' => [
                 'dashboard.view', 'cashbook.view', 'cashbook.create', 'cashbook.update', 'cashbook.approve', 'cashbook.cancel', 'cashbook.export',
                 'reports.view', 'reports.export', 'orders.view', 'orders.view_all', 'orders.export',
                 'customers.view', 'customers.view_all', 'customers.export',
+                'suppliers.view', 'suppliers.export', 'purchases.view', 'purchases.pay', 'purchases.export',
             ],
         ];
     }
