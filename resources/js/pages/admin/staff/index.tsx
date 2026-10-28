@@ -2,24 +2,18 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Pencil, Plus } from 'lucide-react';
 import { ConfirmDelete } from '@/components/app/confirm-delete';
 import { PageHeader } from '@/components/app/page-header';
-import { Pagination } from '@/components/app/pagination';
-import { SearchInput } from '@/components/app/search-input';
 import { StatusBadge } from '@/components/app/status-badge';
+import { DataTable } from '@/components/data-table';
+import type {
+    BulkAction,
+    Column,
+    FilterDef,
+    TableData,
+} from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { useCan } from '@/hooks/use-can';
 import { formatDateTime } from '@/lib/format';
-import { cn } from '@/lib/utils';
-import type { Paginated } from '@/types';
 
 type Member = {
     id: number;
@@ -29,24 +23,145 @@ type Member = {
     is_owner: boolean;
     status: string;
     last_login_at: string | null;
+    created_at: string | null;
     roles: string[];
     branches: string[];
 };
 
-const tabs = [
-    { value: '', label: 'Tất cả' },
+type Option = { id: number; name: string };
+
+const statuses = [
     { value: 'active', label: 'Đang hoạt động' },
     { value: 'inactive', label: 'Ngừng hoạt động' },
 ];
 
+const columns: Column<Member>[] = [
+    {
+        key: 'name',
+        header: 'Nhân viên',
+        sort: 'name',
+        fixed: true,
+        cell: (member) => (
+            <>
+                <div className="font-medium">
+                    {member.name}
+                    {member.is_owner && (
+                        <Badge className="ml-2">Chủ cửa hàng</Badge>
+                    )}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                    {member.email}
+                </div>
+            </>
+        ),
+    },
+    { key: 'phone', header: 'Điện thoại', cell: (member) => member.phone },
+    {
+        key: 'roles',
+        header: 'Vai trò',
+        cell: (member) => member.roles.join(', '),
+    },
+    {
+        key: 'branches',
+        header: 'Chi nhánh',
+        className: 'max-w-48 truncate',
+        cell: (member) =>
+            member.is_owner ? 'Tất cả' : member.branches.join(', '),
+    },
+    {
+        key: 'last_login_at',
+        header: 'Đăng nhập gần nhất',
+        sort: 'last_login_at',
+        className: 'whitespace-nowrap',
+        cell: (member) => formatDateTime(member.last_login_at),
+    },
+    {
+        key: 'created_at',
+        header: 'Ngày tạo',
+        sort: 'created_at',
+        hidden: true,
+        className: 'whitespace-nowrap',
+        cell: (member) => formatDateTime(member.created_at),
+    },
+    {
+        key: 'status',
+        header: 'Trạng thái',
+        cell: (member) => <StatusBadge status={member.status} />,
+    },
+];
+
 export default function StaffIndex({
     staff,
-    filters,
+    roles,
+    branches,
 }: {
-    staff: Paginated<Member>;
-    filters: { search: string; status: string };
+    staff: TableData<Member>;
+    roles: Option[];
+    branches: Option[];
 }) {
     const can = useCan();
+
+    const filters: FilterDef[] = [
+        {
+            key: 'status',
+            label: 'Trạng thái',
+            type: 'select',
+            options: statuses,
+        },
+        {
+            key: 'role',
+            label: 'Vai trò',
+            type: 'select',
+            options: roles.map((role) => ({
+                value: String(role.id),
+                label: role.name,
+            })),
+        },
+        {
+            key: 'branch',
+            label: 'Chi nhánh',
+            type: 'select',
+            options: branches.map((branch) => ({
+                value: String(branch.id),
+                label: branch.name,
+            })),
+        },
+        {
+            key: 'last_login_at',
+            label: 'Đăng nhập gần nhất',
+            type: 'date-range',
+        },
+    ];
+
+    const bulk = (action: string) => (ids: number[]) =>
+        router.post(
+            '/staff/bulk',
+            { action, ids },
+            { preserveScroll: true, preserveState: true },
+        );
+
+    const bulkActions: BulkAction[] = can('staff.update')
+        ? [
+              { label: 'Cho hoạt động', run: bulk('activate') },
+              {
+                  label: 'Ngừng hoạt động',
+                  run: bulk('deactivate'),
+                  confirm:
+                      'Nhân viên ngừng hoạt động sẽ bị đăng xuất và không đăng nhập được nữa.',
+              },
+              ...(can('staff.delete')
+                  ? [
+                        {
+                            label: 'Xóa',
+                            run: bulk('delete'),
+                            destructive: true,
+                            confirm:
+                                'Xóa các nhân viên đã chọn? Chủ cửa hàng và tài khoản của bạn sẽ được bỏ qua.',
+                        },
+                    ]
+                  : []),
+          ]
+        : [];
 
     return (
         <>
@@ -65,121 +180,39 @@ export default function StaffIndex({
                         )
                     }
                 />
-                <Card className="gap-0 py-0">
-                    <div className="flex gap-4 border-b px-3">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab.value}
-                                type="button"
-                                onClick={() =>
-                                    router.get(
-                                        '/staff',
-                                        {
-                                            search: filters.search || undefined,
-                                            status: tab.value || undefined,
-                                        },
-                                        { preserveState: true },
-                                    )
-                                }
-                                className={cn(
-                                    '-mb-px border-b-2 border-transparent py-2.5 text-sm text-muted-foreground',
-                                    filters.status === tab.value &&
-                                        'border-primary font-medium text-foreground',
-                                )}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="p-3">
-                        <SearchInput
-                            value={filters.search}
-                            placeholder="Tìm theo tên, email, số điện thoại"
-                        />
-                    </div>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nhân viên</TableHead>
-                                <TableHead>Điện thoại</TableHead>
-                                <TableHead>Vai trò</TableHead>
-                                <TableHead>Chi nhánh</TableHead>
-                                <TableHead>Đăng nhập gần nhất</TableHead>
-                                <TableHead>Trạng thái</TableHead>
-                                <TableHead className="w-24" />
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {staff.data.map((member) => (
-                                <TableRow key={member.id}>
-                                    <TableCell>
-                                        <div className="font-medium">
-                                            {member.name}
-                                            {member.is_owner && (
-                                                <Badge className="ml-2">
-                                                    Chủ cửa hàng
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {member.email}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{member.phone}</TableCell>
-                                    <TableCell>
-                                        {member.roles.join(', ')}
-                                    </TableCell>
-                                    <TableCell className="max-w-48 truncate">
-                                        {member.is_owner
-                                            ? 'Tất cả'
-                                            : member.branches.join(', ')}
-                                    </TableCell>
-                                    <TableCell className="whitespace-nowrap">
-                                        {formatDateTime(member.last_login_at)}
-                                    </TableCell>
-                                    <TableCell>
-                                        <StatusBadge status={member.status} />
-                                    </TableCell>
-                                    <TableCell className="text-right whitespace-nowrap">
-                                        {can('staff.update') && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                asChild
-                                            >
-                                                <Link
-                                                    href={`/staff/${member.id}/edit`}
-                                                    aria-label="Sửa"
-                                                >
-                                                    <Pencil className="size-4" />
-                                                </Link>
-                                            </Button>
-                                        )}
-                                        {can('staff.delete') &&
-                                            !member.is_owner && (
-                                                <ConfirmDelete
-                                                    url={`/staff/${member.id}`}
-                                                    title={`Xóa nhân viên ${member.name}?`}
-                                                    description="Nếu chỉ tạm nghỉ, hãy chuyển trạng thái sang Ngừng hoạt động thay vì xóa."
-                                                />
-                                            )}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {staff.data.length === 0 && (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={7}
-                                        className="py-10 text-center text-muted-foreground"
+                <DataTable
+                    tableKey="staff"
+                    data={staff}
+                    columns={columns}
+                    searchPlaceholder="Tìm theo tên, email, số điện thoại"
+                    tabs={{ filter: 'status', options: statuses }}
+                    filters={filters}
+                    bulkActions={bulkActions}
+                    canSelect={(member) => !member.is_owner}
+                    exportable
+                    empty="Không có nhân viên nào."
+                    rowActions={(member) => (
+                        <>
+                            {can('staff.update') && (
+                                <Button variant="ghost" size="icon" asChild>
+                                    <Link
+                                        href={`/staff/${member.id}/edit`}
+                                        aria-label="Sửa"
                                     >
-                                        Không có nhân viên nào.
-                                    </TableCell>
-                                </TableRow>
+                                        <Pencil className="size-4" />
+                                    </Link>
+                                </Button>
                             )}
-                        </TableBody>
-                    </Table>
-                    <Pagination page={staff} />
-                </Card>
+                            {can('staff.delete') && !member.is_owner && (
+                                <ConfirmDelete
+                                    url={`/staff/${member.id}`}
+                                    title={`Xóa nhân viên ${member.name}?`}
+                                    description="Nếu chỉ tạm nghỉ, hãy chuyển trạng thái sang Ngừng hoạt động thay vì xóa."
+                                />
+                            )}
+                        </>
+                    )}
+                />
             </div>
         </>
     );

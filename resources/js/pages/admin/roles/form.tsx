@@ -1,8 +1,6 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import type { FormEvent } from 'react';
-import { PageHeader } from '@/components/app/page-header';
+import { Head, useForm } from '@inertiajs/react';
+import { DocumentForm } from '@/components/app/document-form';
 import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -42,9 +40,7 @@ export default function RoleForm({ role, modules, actions }: Props) {
         module.actions.map((action) => `${module.key}.${action}`),
     );
 
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
-
+    const submit = () => {
         if (role) {
             form.put(`/roles/${role.id}`);
         } else {
@@ -57,18 +53,12 @@ export default function RoleForm({ role, modules, actions }: Props) {
     return (
         <>
             <Head title={title} />
-            <form onSubmit={submit} className="space-y-4 p-4 md:p-6">
-                <PageHeader
-                    title={title}
-                    actions={
-                        <>
-                            <Button variant="outline" asChild>
-                                <Link href="/roles">Hủy</Link>
-                            </Button>
-                            <Button disabled={form.processing}>Lưu</Button>
-                        </>
-                    }
-                />
+            <DocumentForm
+                title={title}
+                backHref="/roles"
+                onSubmit={submit}
+                processing={form.processing}
+            >
                 <Card>
                     <CardContent className="grid max-w-md gap-2">
                         <Label htmlFor="name">Tên vai trò *</Label>
@@ -171,7 +161,7 @@ export default function RoleForm({ role, modules, actions }: Props) {
                     </Table>
                 </Card>
                 <InputError message={form.errors.permissions} />
-            </form>
+            </DocumentForm>
         </>
     );
 }

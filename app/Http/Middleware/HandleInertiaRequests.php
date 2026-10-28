@@ -48,7 +48,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
                 'permissions' => $user instanceof User ? $user->permissionNames() : [],
             ],
-            'branches' => fn (): array => $user instanceof User ? $this->branches($user) : ['current' => null, 'available' => []],
+            'branchContext' => fn (): array => $user instanceof User ? $this->branchContext($user) : ['current' => null, 'available' => []],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
@@ -56,7 +56,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * @return array{current: ?int, available: list<array{id: int, name: string}>}
      */
-    protected function branches(User $user): array
+    protected function branchContext(User $user): array
     {
         $available = array_values(Branch::query()
             ->whereIn('id', $user->branchIds())

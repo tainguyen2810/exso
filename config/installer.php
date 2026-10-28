@@ -21,7 +21,7 @@ return [
 
     'extensions' => [
         'ctype', 'curl', 'fileinfo', 'gd', 'intl', 'mbstring',
-        'openssl', 'pdo_mysql', 'tokenizer', 'xml', 'zip',
+        'openssl', 'pdo_mysql', 'tokenizer', 'xml', 'xmlreader', 'zip',
     ],
 
     'writable' => [

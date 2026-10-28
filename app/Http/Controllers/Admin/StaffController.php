@@ -6,32 +6,42 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\DataTable\DataTable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StaffController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|StreamedResponse
     {
-        $search = $request->string('search')->trim()->toString();
-        $status = $request->string('status')->toString();
+        $table = DataTable::for(User::query()->with(['roles:id,name', 'branches:id,name']), $request, 'staff')
+            ->search(['name', 'email', 'phone'])
+            ->filterExact('status')
+            ->filter('role', fn (Builder $query, mixed $value) => $query->whereHas('roles', fn (Builder $roles) => $roles->whereKey((int) $value)))
+            ->filter('branch', fn (Builder $query, mixed $value) => $query->whereHas('branches', fn (Builder $branches) => $branches->whereKey((int) $value)))
+            ->filterDateRange('last_login_at')
+            ->sortable(['name', 'email', 'last_login_at', 'created_at'], 'name');
 
-        $staff = User::query()
-            ->with(['roles:id,name', 'branches:id,name'])
-            ->when($search !== '', fn ($query) => $query->where(fn ($query) => $query
-                ->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")
-                ->orWhere('phone', 'like', "%{$search}%")))
-            ->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('status', $status))
-            ->orderByDesc('is_owner')
-            ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString()
-            ->through(fn (User $user): array => [
+        if ($request->query('export') === 'xlsx') {
+            return $table->export('nhan-vien-'.now()->format('Ymd-His'), [
+                'Họ tên' => fn (User $user) => $user->name,
+                'Email' => fn (User $user) => $user->email,
+                'Điện thoại' => fn (User $user) => $user->phone,
+                'Vai trò' => fn (User $user) => $user->roles->pluck('name')->all(),
+                'Chi nhánh' => fn (User $user) => $user->is_owner ? 'Tất cả' : $user->branches->pluck('name')->all(),
+                'Trạng thái' => fn (User $user) => $user->status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động',
+                'Đăng nhập gần nhất' => fn (User $user) => $user->last_login_at,
+            ]);
+        }
+
+        return Inertia::render('admin/staff/index', [
+            'staff' => $table->paginate(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
@@ -39,14 +49,47 @@ class StaffController extends Controller
                 'is_owner' => $user->is_owner,
                 'status' => $user->status,
                 'last_login_at' => $user->last_login_at?->toIso8601String(),
+                'created_at' => $user->created_at?->toIso8601String(),
                 'roles' => $user->roles->pluck('name'),
                 'branches' => $user->branches->pluck('name'),
-            ]);
-
-        return Inertia::render('admin/staff/index', [
-            'staff' => $staff,
-            'filters' => ['search' => $search, 'status' => $status],
+            ]),
+            ...$this->options(),
         ]);
+    }
+
+    /**
+     * Bulk actions from the list: activate, deactivate or delete the selected staff.
+     * The owner and the current user are always skipped.
+     */
+    public function bulk(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'action' => ['required', Rule::in(['activate', 'deactivate', 'delete'])],
+            'ids' => ['required', 'array', 'max:500'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $action = $request->string('action')->toString();
+
+        abort_if($action === 'delete' && ! $request->user()?->can('staff.delete'), 403);
+
+        $users = User::query()
+            ->whereKey($data['ids'])
+            ->where('is_owner', false)
+            ->whereKeyNot($request->user()?->id)
+            ->get();
+
+        foreach ($users as $user) {
+            if ($action === 'delete') {
+                $user->delete();
+            } else {
+                $user->update(['status' => $action === 'activate' ? 'active' : 'inactive']);
+            }
+        }
+
+        $this->toast("Đã cập nhật {$users->count()} nhân viên.");
+
+        return back();
     }
 
     public function create(): Response

@@ -115,7 +115,7 @@ test('changing a staff member is logged with before and after values, without th
     $this->actingAs($owner)->get('/activity-log')
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/activity-log/index')
-            ->where('logs.data.0.description', 'Sửa nhân viên Tên mới'));
+            ->where('logs.rows.data.0.description', 'Sửa nhân viên Tên mới'));
 });
 
 test('staff of another store are not reachable', function () {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\BranchSwitchController;
 use App\Http\Controllers\Install\InstallController;
+use App\Http\Controllers\SavedViewController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('install', [InstallController::class, 'show'])->name('install.show');
@@ -17,6 +18,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 
     Route::post('branch/switch', BranchSwitchController::class)->name('branch.switch');
+
+    Route::post('saved-views', [SavedViewController::class, 'store'])->name('saved-views.store');
+    Route::delete('saved-views/{savedView}', [SavedViewController::class, 'destroy'])->name('saved-views.destroy');
 
     // Business modules built in later phases. Each page is already guarded by
     // its permission so roles can be set up now.
@@ -37,6 +41,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     }
 
     Route::get('staff', [StaffController::class, 'index'])->middleware('can:staff.view')->name('staff.index');
+    Route::post('staff/bulk', [StaffController::class, 'bulk'])->middleware('can:staff.update')->name('staff.bulk');
     Route::get('staff/create', [StaffController::class, 'create'])->middleware('can:staff.create')->name('staff.create');
     Route::post('staff', [StaffController::class, 'store'])->middleware('can:staff.create')->name('staff.store');
     Route::get('staff/{staff}/edit', [StaffController::class, 'edit'])->middleware('can:staff.update')->name('staff.edit');
@@ -51,6 +56,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('roles/{role}', [RoleController::class, 'destroy'])->middleware('can:roles.delete')->name('roles.destroy');
 
     Route::get('branches', [BranchController::class, 'index'])->middleware('can:branches.view')->name('branches.index');
+    Route::post('branches/bulk', [BranchController::class, 'bulk'])->middleware('can:branches.update')->name('branches.bulk');
+    Route::get('branches/import/template', [BranchController::class, 'template'])->middleware('can:branches.create')->name('branches.import.template');
+    Route::post('branches/import', [BranchController::class, 'import'])->middleware('can:branches.create')->name('branches.import');
     Route::get('branches/create', [BranchController::class, 'create'])->middleware('can:branches.create')->name('branches.create');
     Route::post('branches', [BranchController::class, 'store'])->middleware('can:branches.create')->name('branches.store');
     Route::get('branches/{branch}/edit', [BranchController::class, 'edit'])->middleware('can:branches.update')->name('branches.edit');

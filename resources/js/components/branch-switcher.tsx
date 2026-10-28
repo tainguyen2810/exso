@@ -10,7 +10,7 @@ import {
 
 /** Chooses the branch the user is working in (kept in the session). */
 export function BranchSwitcher() {
-    const { branches } = usePage().props;
+    const { branchContext: branches } = usePage().props;
 
     if (branches.available.length === 0) {
         return null;

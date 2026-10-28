@@ -34,6 +34,25 @@ class DatabaseSeeder extends Seeder
             $cashier = User::factory()->create(['name' => 'Thu ngân', 'email' => 'thungan@exso.test']);
             $cashier->branches()->attach($main);
             $cashier->assignRole('Thu ngân');
+
+            $demo = [
+                ['Nguyễn Thị Lan', 'Thu ngân', $second, 'active'],
+                ['Trần Văn Hùng', 'Nhân viên kho', $main, 'active'],
+                ['Lê Minh Tuấn', 'Nhân viên kho', $second, 'active'],
+                ['Phạm Thu Hà', 'Kế toán', $main, 'active'],
+                ['Võ Quốc Bảo', 'Thu ngân', $main, 'inactive'],
+            ];
+
+            foreach ($demo as $index => [$name, $role, $branch, $status]) {
+                $user = User::factory()->create([
+                    'name' => $name,
+                    'email' => 'nhanvien'.($index + 1).'@exso.test',
+                    'phone' => '09080000'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
+                    'status' => $status,
+                ]);
+                $user->branches()->attach($branch);
+                $user->assignRole($role);
+            }
         });
     }
 }
