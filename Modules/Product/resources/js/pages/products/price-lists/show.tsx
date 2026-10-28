@@ -1,10 +1,12 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ChevronLeft } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmDelete } from '@/components/app/confirm-delete';
 import { MoneyInput } from '@/components/app/money-input';
-import { PageHeader } from '@/components/app/page-header';
+import { PageTitle } from '@/components/app/topbar';
 import { DataTable } from '@/components/data-table';
 import type { Column, TableData } from '@/components/data-table';
+import { Button } from '@/components/ui/button';
 import { useCan } from '@/hooks/use-can';
 import { formatNumber } from '@/lib/format';
 
@@ -121,20 +123,28 @@ export default function PriceListShow({
     return (
         <>
             <Head title={priceList.name} />
-            <div className="space-y-4 p-4 md:p-6">
-                <PageHeader
-                    title={`${priceList.name} (${priceList.code})`}
-                    description="Nhập giá rồi bấm Enter hoặc chuyển ô để lưu. Để trống là chưa áp dụng chính sách này cho phiên bản đó."
-                    actions={
-                        can('products.delete') && (
-                            <ConfirmDelete
-                                url={`/price-lists/${priceList.id}`}
-                                title={`Xóa chính sách giá ${priceList.name}?`}
-                                description="Giá của chính sách này ở mọi phiên bản sẽ bị xóa."
-                            />
-                        )
-                    }
-                />
+            <PageTitle>
+                <Link
+                    href="/price-lists"
+                    className="inline-flex items-center gap-1 truncate text-sm text-muted-foreground hover:text-primary"
+                >
+                    <ChevronLeft className="size-4" />
+                    Quay lại danh sách chính sách giá
+                </Link>
+            </PageTitle>
+            <div className="mx-auto max-w-[1200px] space-y-4 px-4 pt-5 pb-10 md:px-8">
+                <div>
+                    <h2 className="text-xl font-medium">
+                        {priceList.name}{' '}
+                        <span className="text-muted-foreground">
+                            ({priceList.code})
+                        </span>
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                        Nhập giá rồi bấm Enter hoặc chuyển ô để lưu. Để trống là
+                        chưa áp dụng chính sách này cho phiên bản đó.
+                    </p>
+                </div>
                 <DataTable
                     tableKey="price-list-items"
                     data={variants}
@@ -153,6 +163,23 @@ export default function PriceListShow({
                     ]}
                     empty="Chưa có sản phẩm nào."
                 />
+                {can('products.delete') && (
+                    <div className="border-t pt-4">
+                        <ConfirmDelete
+                            url={`/price-lists/${priceList.id}`}
+                            title={`Xóa chính sách giá ${priceList.name}?`}
+                            description="Giá của chính sách này ở mọi phiên bản sẽ bị xóa."
+                            trigger={
+                                <Button
+                                    variant="outline"
+                                    className="border-destructive text-destructive hover:bg-destructive/5 hover:text-destructive"
+                                >
+                                    Xóa chính sách giá
+                                </Button>
+                            }
+                        />
+                    </div>
+                )}
             </div>
         </>
     );

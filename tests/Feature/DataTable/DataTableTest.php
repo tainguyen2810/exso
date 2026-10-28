@@ -34,6 +34,7 @@ function readXlsx(string $content): array
 
 test('the list searches, filters, sorts and pages on the server', function () {
     $owner = owner();
+    $owner->update(['name' => 'Chủ cửa hàng']); // a random name could contain "Bình"
     User::factory()->create(['name' => 'Trần Bình', 'status' => 'active']);
     User::factory()->create(['name' => 'Lê Bình', 'status' => 'inactive']);
     User::factory()->count(3)->create(['name' => 'Khác']);

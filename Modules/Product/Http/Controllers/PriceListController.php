@@ -94,7 +94,7 @@ class PriceListController extends Controller
                 'unit' => $variant->unit,
                 'retail_price' => $variant->retail_price,
                 'wholesale_price' => $variant->wholesale_price,
-                'import_price' => $variant->import_price,
+                'import_price' => $request->user()?->can('products.view_cost') ? $variant->import_price : null,
                 'list_price' => $variant->getAttribute('list_price') === null ? null : (int) $variant->getAttribute('list_price'),
             ]),
         ]);

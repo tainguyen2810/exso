@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Barcode, Plus } from 'lucide-react';
 import { ImportDialog } from '@/components/app/import-dialog';
-import { PageHeader } from '@/components/app/page-header';
+import { Pill } from '@/components/app/status-badge';
 import { DataTable } from '@/components/data-table';
 import type {
     BulkAction,
@@ -9,7 +9,6 @@ import type {
     FilterOption,
     TableData,
 } from '@/components/data-table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCan } from '@/hooks/use-can';
 import { formatDateTime, formatNumber } from '@/lib/format';
@@ -67,11 +66,11 @@ const columns: Column<Row>[] = [
         cell: (product) => (
             <Link
                 href={`/products/${product.id}/edit`}
-                className="flex items-center gap-3"
+                className="group flex items-center gap-3"
             >
                 <ProductThumb url={product.image_url} />
                 <span className="min-w-0">
-                    <span className="block font-medium text-primary hover:underline">
+                    <span className="block text-primary group-hover:underline">
                         {product.name}
                     </span>
                     <span className="text-xs text-muted-foreground">
@@ -86,9 +85,7 @@ const columns: Column<Row>[] = [
     {
         key: 'type',
         header: 'Loại hình',
-        cell: (product) => (
-            <Badge variant="outline">{typeLabels[product.type]}</Badge>
-        ),
+        cell: (product) => typeLabels[product.type],
     },
     {
         key: 'category',
@@ -122,11 +119,9 @@ const columns: Column<Row>[] = [
         header: 'Trạng thái',
         cell: (product) =>
             product.is_sellable ? (
-                <Badge variant="secondary">Đang bán</Badge>
+                <Pill tone="success">Đang giao dịch</Pill>
             ) : (
-                <Badge variant="outline" className="text-muted-foreground">
-                    Ngừng bán
-                </Badge>
+                <Pill>Ngừng giao dịch</Pill>
             ),
     },
     {
@@ -166,8 +161,14 @@ export default function ProductsIndex({
         },
         ...(can('products.update')
             ? [
-                  { label: 'Cho phép bán', run: bulk('sellable') },
-                  { label: 'Ngừng bán', run: bulk('unsellable') },
+                  {
+                      label: 'Đang giao dịch',
+                      run: bulk('sellable'),
+                  },
+                  {
+                      label: 'Ngừng giao dịch',
+                      run: bulk('unsellable'),
+                  },
               ]
             : []),
         ...(can('products.delete')
@@ -189,20 +190,7 @@ export default function ProductsIndex({
     return (
         <>
             <Head title="Sản phẩm" />
-            <div className="space-y-4 p-4 md:p-6">
-                <PageHeader
-                    title="Sản phẩm"
-                    description="Hàng hóa, dịch vụ/license và combo. Giá, mã vạch và tồn kho nằm ở từng phiên bản."
-                    actions={
-                        can('products.create') && (
-                            <Button asChild>
-                                <Link href="/products/create">
-                                    <Plus /> Thêm sản phẩm
-                                </Link>
-                            </Button>
-                        )
-                    }
-                />
+            <div className="px-4 pt-5 pb-10 md:px-8">
                 <DataTable
                     tableKey="products"
                     data={products}
@@ -239,8 +227,8 @@ export default function ProductsIndex({
                             label: 'Trạng thái bán',
                             type: 'select',
                             options: [
-                                { value: '1', label: 'Đang bán' },
-                                { value: '0', label: 'Ngừng bán' },
+                                { value: '1', label: 'Đang giao dịch' },
+                                { value: '0', label: 'Ngừng giao dịch' },
                             ],
                         },
                         {
@@ -251,6 +239,22 @@ export default function ProductsIndex({
                     ]}
                     bulkActions={bulkActions}
                     exportable
+                    actions={
+                        <>
+                            <Button variant="outline" asChild>
+                                <Link href="/products/barcodes">
+                                    <Barcode /> In mã vạch
+                                </Link>
+                            </Button>
+                            {can('products.create') && (
+                                <Button asChild>
+                                    <Link href="/products/create">
+                                        <Plus /> Thêm sản phẩm
+                                    </Link>
+                                </Button>
+                            )}
+                        </>
+                    }
                     toolbar={
                         can('products.create') && (
                             <ImportDialog

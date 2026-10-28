@@ -76,7 +76,7 @@ class ProductController extends Controller
             ->sortable(['name', 'on_hand', 'available', 'created_at']);
 
         if ($request->query('export') === 'xlsx') {
-            return ProductExcel::export($table->query());
+            return ProductExcel::export($table->query(), $branchIds, $user->can('products.view_cost'));
         }
 
         return Inertia::render('products/index', [
@@ -126,6 +126,7 @@ class ProductController extends Controller
         $user = $request->user();
         $product->load(['category', 'brand', 'variants.prices', 'comboItems.variant']);
         $branchIds = $user->branchIds();
+        $showCost = $user->can('products.view_cost');
 
         $stock = Inventory::query()
             ->with('branch:id,name')
@@ -157,8 +158,8 @@ class ProductController extends Controller
                     'barcode' => $variant->barcode,
                     'retail_price' => $variant->retail_price,
                     'wholesale_price' => $variant->wholesale_price,
-                    'import_price' => $variant->import_price,
-                    'cost_price' => $variant->cost_price,
+                    'import_price' => $showCost ? $variant->import_price : null,
+                    'cost_price' => $showCost ? $variant->cost_price : null,
                     'weight' => $variant->weight,
                     'prices' => $variant->prices->mapWithKeys(fn ($price) => [(string) $price->price_list_id => $price->price])->all(),
                     'stock' => $stock->where('variant_id', $variant->id)->values()->map(fn (Inventory $inventory): array => [
@@ -379,6 +380,10 @@ class ProductController extends Controller
         $this->checkVariants($product, $options, $variants, $units);
 
         $ownIds = $product === null ? [] : $product->variants()->pluck('id')->all();
+        // Without the cost permission the purchase price is neither shown nor
+        // changed: existing variants keep theirs.
+        $showCost = $user->can('products.view_cost');
+        $importPrices = $product === null ? [] : $product->variants()->pluck('import_price', 'id')->all();
 
         return [
             'type' => $type,
@@ -393,17 +398,17 @@ class ProductController extends Controller
             'allow_negative_stock' => (bool) ($data['allow_negative_stock'] ?? false),
             'options' => $options,
             'variants' => array_map(fn (array $variant): array => [
-                'id' => isset($variant['id']) && in_array((int) $variant['id'], $ownIds, true) ? (int) $variant['id'] : null,
+                'id' => $id = isset($variant['id']) && in_array((int) $variant['id'], $ownIds, true) ? (int) $variant['id'] : null,
                 'options' => array_values($variant['options'] ?? []),
                 'sku' => $variant['sku'] ?? null,
                 'barcode' => $variant['barcode'] ?? null,
                 'retail_price' => (int) ($variant['retail_price'] ?? 0),
                 'wholesale_price' => (int) ($variant['wholesale_price'] ?? 0),
-                'import_price' => (int) ($variant['import_price'] ?? 0),
+                'import_price' => $showCost ? (int) ($variant['import_price'] ?? 0) : (int) ($importPrices[$id] ?? 0),
                 'weight' => (int) ($variant['weight'] ?? 0),
                 'prices' => $this->prices($variant['prices'] ?? []),
                 'opening_quantity' => (int) ($variant['opening_quantity'] ?? 0),
-                'opening_cost' => isset($variant['opening_cost']) ? (int) $variant['opening_cost'] : null,
+                'opening_cost' => $showCost && isset($variant['opening_cost']) ? (int) $variant['opening_cost'] : null,
             ], array_values($variants)),
             'units' => array_map(fn (array $unit): array => [
                 'id' => isset($unit['id']) && in_array((int) $unit['id'], $ownIds, true) ? (int) $unit['id'] : null,

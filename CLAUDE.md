@@ -39,6 +39,8 @@ Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module).
 - Mọi bảng nghiệp vụ có `tenant_id` (+ `branch_id` từ G1) và model dùng trait `BelongsToTenant`. Không query vượt tenant; nếu thật sự cần thì dùng `withoutGlobalScope(TenantScope::class)` và ghi chú lý do.
 - Thiếu tenant trong chế độ SaaS thì query trả rỗng (fail closed). Job/command chạy cho một cửa hàng phải bọc trong `tenancy()->run($tenant, ...)`.
 - Quyền: định nghĩa trong `app/Authorization/Permissions.php` dạng `<module>.<action>` (view/create/update/delete/approve). Thêm module mới → thêm vào `modules()`, chạy `php artisan permissions:sync`, thêm mục menu trong `resources/js/config/menu.ts` với `permission`.
+- Quyền dữ liệu `products.view_cost`: không có thì server trả `null` cho giá nhập/giá vốn/giá trị tồn (trang, xuất Excel), lưu sản phẩm giữ giá nhập cũ, nhập Excel bỏ cột giá nhập/giá vốn. Trang React ẩn khi giá trị là `null` hoặc `!can('products.view_cost')`.
+- Nhập/xuất Excel theo chi nhánh chỉ dùng chi nhánh của user (`branchIds()`); cột `LC_` của chi nhánh khác bị bỏ qua.
 - Mọi route kiểm tra quyền bằng middleware `can:<module>.<action>` (hoặc Policy khi cần kiểm theo bản ghi). Chủ cửa hàng (`users.is_owner`) qua `Gate::before` có toàn quyền.
 - Vai trò là của từng cửa hàng (spatie/laravel-permission, teams = tenant_id). `TenantContext` tự đặt team id.
 - Chi nhánh: user chỉ làm việc ở chi nhánh được gán (`$user->branchIds()`), chi nhánh đang chọn lấy từ `CurrentBranch`. Từ G2, dữ liệu theo chi nhánh phải lọc theo `branchIds()`.

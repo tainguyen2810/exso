@@ -1,8 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
-import { PageHeader } from '@/components/app/page-header';
+import { Pill } from '@/components/app/status-badge';
 import { DataTable } from '@/components/data-table';
 import type { Column, FilterOption, TableData } from '@/components/data-table';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -20,7 +19,7 @@ type Row = {
     reserved: number;
     available: number;
     min_quantity: number | null;
-    cost_price: number;
+    cost_price: number | null;
 };
 
 type Option = { id: number; name: string };
@@ -67,12 +66,9 @@ const columns: Column<Row>[] = [
                 {quantity(row.on_hand)}
                 {row.min_quantity !== null &&
                     row.on_hand < row.min_quantity && (
-                        <Badge
-                            variant="outline"
-                            className="ml-2 text-amber-600"
-                        >
+                        <Pill tone="warning" className="ml-2">
                             Dưới định mức
-                        </Badge>
+                        </Pill>
                     )}
             </>
         ),
@@ -95,13 +91,14 @@ const columns: Column<Row>[] = [
         header: 'Giá vốn',
         sort: 'cost_price',
         className: 'text-right tabular-nums',
-        cell: (row) => formatNumber(row.cost_price),
+        cell: (row) => formatNumber(row.cost_price ?? 0),
     },
     {
         key: 'value',
         header: 'Giá trị tồn',
         className: 'text-right tabular-nums',
-        cell: (row) => formatNumber(Math.max(row.on_hand, 0) * row.cost_price),
+        cell: (row) =>
+            formatNumber(Math.max(row.on_hand, 0) * (row.cost_price ?? 0)),
     },
 ];
 
@@ -120,22 +117,20 @@ export default function InventoryIndex({
     brands,
 }: {
     stock: TableData<Row>;
-    totals: { on_hand: number; value: number };
+    totals: { on_hand: number; value: number | null };
     branches: Option[];
     categories: Option[];
     brands: Option[];
 }) {
     const toOptions = (items: Option[]): FilterOption[] =>
         items.map((item) => ({ value: String(item.id), label: item.name }));
+    // The server sends no cost without the cost permission.
+    const showCost = totals.value !== null;
 
     return (
         <>
             <Head title="Tồn kho" />
-            <div className="space-y-4 p-4 md:p-6">
-                <PageHeader
-                    title="Tồn kho"
-                    description="Tồn kho = số đang có trong kho. Có thể bán = tồn kho trừ hàng đang giữ cho đơn chưa xuất."
-                />
+            <div className="space-y-4 px-4 pt-5 pb-10 md:px-8">
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Card>
                         <CardContent className="space-y-1">
@@ -147,21 +142,32 @@ export default function InventoryIndex({
                             </div>
                         </CardContent>
                     </Card>
-                    <Card>
-                        <CardContent className="space-y-1">
-                            <div className="text-sm text-muted-foreground">
-                                Giá trị tồn (theo giá vốn)
-                            </div>
-                            <div className="text-2xl font-semibold tabular-nums">
-                                {formatNumber(totals.value)} đ
-                            </div>
-                        </CardContent>
-                    </Card>
+                    {showCost && (
+                        <Card>
+                            <CardContent className="space-y-1">
+                                <div className="text-sm text-muted-foreground">
+                                    Giá trị tồn (theo giá vốn)
+                                </div>
+                                <div className="text-2xl font-semibold tabular-nums">
+                                    {formatNumber(totals.value ?? 0)} đ
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
                 <DataTable
                     tableKey="inventory"
                     data={stock}
-                    columns={columns}
+                    columns={
+                        showCost
+                            ? columns
+                            : columns.filter(
+                                  (column) =>
+                                      !['cost_price', 'value'].includes(
+                                          column.key,
+                                      ),
+                              )
+                    }
                     searchPlaceholder="Tìm theo tên, mã SKU, mã vạch"
                     tabs={
                         branches.length > 1
@@ -206,8 +212,5 @@ export default function InventoryIndex({
 }
 
 InventoryIndex.layout = {
-    breadcrumbs: [
-        { title: 'Kho hàng', href: '/inventory' },
-        { title: 'Tồn kho', href: '/inventory' },
-    ],
+    breadcrumbs: [{ title: 'Quản lý kho', href: '/inventory' }],
 };

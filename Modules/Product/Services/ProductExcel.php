@@ -31,6 +31,14 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class ProductExcel
 {
+    /** @var list<int>|null branches the importing user works at; null = all */
+    protected ?array $branchIds = null;
+
+    protected bool $showCost = true;
+
+    /** @var list<string> */
+    protected array $skippedBranches = [];
+
     /** @var array<string, string> loose heading key => field */
     public const ALIASES = [
         'ten_san_pham' => 'name',
@@ -105,14 +113,17 @@ class ProductExcel
     }
 
     /**
-     * All variants of the filtered products, plus custom prices and stock per branch.
+     * All variants of the filtered products, plus custom prices and stock of
+     * the given branches. Without $showCost the purchase price and cost are
+     * left blank (blank cells keep the current values when imported back).
      *
      * @param  Builder<Product>  $query
+     * @param  list<int>  $branchIds
      */
-    public static function export(Builder $query): StreamedResponse
+    public static function export(Builder $query, array $branchIds, bool $showCost): StreamedResponse
     {
         $priceLists = PriceList::query()->orderBy('name')->get();
-        $branches = Branch::query()->orderByDesc('is_default')->orderBy('name')->get();
+        $branches = Branch::query()->whereIn('id', $branchIds)->orderByDesc('is_default')->orderBy('name')->get();
 
         $headings = [...self::headings(), 'Giá vốn'];
 
@@ -124,11 +135,11 @@ class ProductExcel
             $headings[] = "LC_{$branch->name}_Tồn kho";
         }
 
-        return ExcelExport::download('san-pham-'.now()->format('Ymd-His'), $headings, function () use ($query, $priceLists, $branches): iterable {
+        return ExcelExport::download('san-pham-'.now()->format('Ymd-His'), $headings, function () use ($query, $priceLists, $branches, $showCost): iterable {
             $query = (clone $query)->with(['category', 'brand', 'variants' => fn ($variants) => $variants->whereNull('base_variant_id')->with('prices')]);
 
             foreach ($query->lazy(200) as $product) {
-                $stock = Inventory::query()->whereIn('variant_id', $product->variants->pluck('id'))->get()->groupBy('variant_id');
+                $stock = Inventory::query()->whereIn('variant_id', $product->variants->pluck('id'))->whereIn('branch_id', $branches->modelKeys())->get()->groupBy('variant_id');
 
                 foreach ($product->variants as $variant) {
                     $row = [
@@ -136,9 +147,9 @@ class ProductExcel
                         $product->category?->name, $product->brand?->name, $product->description, $product->tags,
                         $product->unit, $variant->weight ?: null,
                         $product->option1, $variant->option1, $product->option2, $variant->option2, $product->option3, $variant->option3,
-                        $variant->retail_price, $variant->wholesale_price, $variant->import_price,
+                        $variant->retail_price, $variant->wholesale_price, $showCost ? $variant->import_price : null,
                         $product->is_sellable ? 'Có' : 'Không', $product->allow_negative_stock ? 'Có' : 'Không', $product->image_url,
-                        $variant->cost_price,
+                        $showCost ? $variant->cost_price : null,
                     ];
 
                     foreach ($priceLists as $list) {
@@ -179,12 +190,21 @@ class ProductExcel
      * Existing SKUs are updated (stock untouched); new ones are created with
      * their opening stock. Any invalid row: nothing is saved.
      *
-     * @return array{created: int, updated: int}
+     * Stock columns of branches outside $branchIds are skipped (a Sapo file
+     * lists every branch), and so are the purchase price and cost columns
+     * when $showCost is false.
+     *
+     * @param  list<int>|null  $branchIds  null = every branch
+     * @return array{created: int, updated: int, skipped_branches: list<string>}
      *
      * @throws ValidationException with "rows" listing errors by line
      */
-    public function import(string $path, ?int $defaultBranchId): array
+    public function import(string $path, ?int $defaultBranchId, ?array $branchIds = null, bool $showCost = true): array
     {
+        $this->branchIds = $branchIds;
+        $this->showCost = $showCost;
+        $this->skippedBranches = [];
+
         $sheet = ExcelImport::read($path, 10000);
 
         if ($sheet['rows'] === []) {
@@ -305,7 +325,7 @@ class ProductExcel
             }
         });
 
-        return ['created' => $created, 'updated' => $updated];
+        return ['created' => $created, 'updated' => $updated, 'skipped_branches' => array_values(array_unique($this->skippedBranches))];
     }
 
     /**
@@ -325,6 +345,10 @@ class ProductExcel
             $columns[$position] = self::ALIASES[$key] ?? null;
 
             if ($columns[$position] !== null) {
+                if (! $this->showCost && in_array($columns[$position], ['import_price', 'cost'], true)) {
+                    $columns[$position] = null;
+                }
+
                 continue;
             }
 
@@ -346,7 +370,19 @@ class ProductExcel
                     continue;
                 }
 
-                $stock[$position] = [$branch->id, str_starts_with(ExcelImport::key($match[2]), 'ton') ? 'quantity' : 'cost'];
+                $field = str_starts_with(ExcelImport::key($match[2]), 'ton') ? 'quantity' : 'cost';
+
+                if ($this->branchIds !== null && ! in_array($branch->id, $this->branchIds, true)) {
+                    $this->skippedBranches[] = $branch->name;
+
+                    continue;
+                }
+
+                if ($field === 'cost' && ! $this->showCost) {
+                    continue;
+                }
+
+                $stock[$position] = [$branch->id, $field];
             }
         }
 

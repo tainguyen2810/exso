@@ -20,6 +20,7 @@ class Permissions
         'update' => 'Sửa',
         'delete' => 'Xóa',
         'approve' => 'Duyệt',
+        'view_cost' => 'Xem giá vốn, giá nhập',
     ];
 
     /**
@@ -32,7 +33,7 @@ class Permissions
     {
         return [
             'dashboard' => ['label' => 'Tổng quan', 'actions' => ['view']],
-            'products' => ['label' => 'Sản phẩm', 'actions' => ['view', 'create', 'update', 'delete']],
+            'products' => ['label' => 'Sản phẩm', 'actions' => ['view', 'create', 'update', 'delete', 'view_cost']],
             'inventory' => ['label' => 'Kho hàng', 'actions' => ['view', 'create', 'update', 'delete', 'approve']],
             'customers' => ['label' => 'Khách hàng', 'actions' => ['view', 'create', 'update', 'delete']],
             'orders' => ['label' => 'Đơn hàng', 'actions' => ['view', 'create', 'update', 'delete', 'approve']],
@@ -77,7 +78,7 @@ class Permissions
                 'orders.view', 'orders.create', 'customers.view', 'customers.create', 'products.view',
             ],
             'Nhân viên kho' => [
-                'dashboard.view', 'products.view', 'products.create', 'products.update',
+                'dashboard.view', 'products.view', 'products.create', 'products.update', 'products.view_cost',
                 'inventory.view', 'inventory.create', 'inventory.update', 'orders.view',
             ],
             'Kế toán' => [

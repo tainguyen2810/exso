@@ -24,6 +24,7 @@ class StockCardController extends Controller
         /** @var User $user */
         $user = $request->user();
         $branchIds = $user->branchIds();
+        $showCost = $user->can('products.view_cost');
         $variant->load('product');
 
         $table = DataTable::for(
@@ -38,17 +39,17 @@ class StockCardController extends Controller
             ->sortable(['created_at'], '-id');
 
         if ($request->query('export') === 'xlsx') {
-            return $table->export("the-kho-{$variant->sku}", [
+            return $table->export("the-kho-{$variant->sku}", array_filter([
                 'Thời gian' => fn (StockMovement $movement) => $movement->created_at?->setTimezone((string) config('app.timezone')),
                 'Chi nhánh' => fn (StockMovement $movement) => $movement->branch->name,
                 'Loại' => fn (StockMovement $movement) => $movement->typeLabel(),
                 'Chứng từ' => fn (StockMovement $movement) => $movement->reference_code,
                 'Thay đổi' => fn (StockMovement $movement) => $movement->quantity,
                 'Tồn sau' => fn (StockMovement $movement) => $movement->on_hand_after,
-                'Giá vốn' => fn (StockMovement $movement) => $movement->cost_after,
+                'Giá vốn' => $showCost ? fn (StockMovement $movement) => $movement->cost_after : null,
                 'Người thực hiện' => fn (StockMovement $movement) => $movement->creator?->name,
                 'Ghi chú' => fn (StockMovement $movement) => $movement->note,
-            ]);
+            ]));
         }
 
         return Inertia::render('inventory/stock-card', [
@@ -59,7 +60,7 @@ class StockCardController extends Controller
                 'sku' => $variant->sku,
                 'barcode' => $variant->barcode,
                 'unit' => $variant->unit,
-                'cost_price' => $variant->cost_price,
+                'cost_price' => $showCost ? $variant->cost_price : null,
                 'retail_price' => $variant->retail_price,
                 'tracks_inventory' => $variant->product->tracksInventory() && $variant->base_variant_id === null,
             ],
@@ -85,8 +86,8 @@ class StockCardController extends Controller
                 'reference_code' => $movement->reference_code,
                 'quantity' => $movement->quantity,
                 'on_hand_after' => $movement->on_hand_after,
-                'unit_cost' => $movement->unit_cost,
-                'cost_after' => $movement->cost_after,
+                'unit_cost' => $showCost ? $movement->unit_cost : null,
+                'cost_after' => $showCost ? $movement->cost_after : null,
                 'creator' => $movement->creator?->name,
                 'note' => $movement->note,
             ]),

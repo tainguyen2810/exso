@@ -28,6 +28,7 @@ class InventoryController extends Controller
         /** @var User $user */
         $user = $request->user();
         $allowed = $user->branchIds();
+        $showCost = $user->can('products.view_cost');
         $filter = $request->query('filter');
         $selected = is_array($filter) && isset($filter['branch_id']) ? array_map('intval', explode(',', (string) $filter['branch_id'])) : [];
         $branchIds = array_values(array_intersect($selected, $allowed)) ?: $allowed;
@@ -72,10 +73,10 @@ class InventoryController extends Controller
                     default => null,
                 };
             })
-            ->sortable(['name', 'sku', 'on_hand', 'reserved', 'cost_price'], 'name');
+            ->sortable($showCost ? ['name', 'sku', 'on_hand', 'reserved', 'cost_price'] : ['name', 'sku', 'on_hand', 'reserved'], 'name');
 
         if ($request->query('export') === 'xlsx') {
-            return $table->export('ton-kho-'.now()->format('Ymd-His'), [
+            return $table->export('ton-kho-'.now()->format('Ymd-His'), array_merge([
                 'Mã SKU' => fn (ProductVariant $variant) => $variant->sku,
                 'Tên phiên bản' => fn (ProductVariant $variant) => $variant->name,
                 'Mã vạch' => fn (ProductVariant $variant) => $variant->barcode,
@@ -84,9 +85,10 @@ class InventoryController extends Controller
                 'Tồn kho' => fn (ProductVariant $variant) => (int) $variant->getAttribute('on_hand'),
                 'Đang giữ' => fn (ProductVariant $variant) => (int) $variant->getAttribute('reserved'),
                 'Có thể bán' => fn (ProductVariant $variant) => (int) $variant->getAttribute('on_hand') - (int) $variant->getAttribute('reserved'),
+            ], $showCost ? [
                 'Giá vốn' => fn (ProductVariant $variant) => $variant->cost_price,
                 'Giá trị tồn' => fn (ProductVariant $variant) => (int) $variant->getAttribute('on_hand') * $variant->cost_price,
-            ]);
+            ] : []));
         }
 
         $totals = Inventory::query()
@@ -109,11 +111,11 @@ class InventoryController extends Controller
                 'reserved' => (int) $variant->getAttribute('reserved'),
                 'available' => (int) $variant->getAttribute('on_hand') - (int) $variant->getAttribute('reserved'),
                 'min_quantity' => $variant->getAttribute('min_quantity') === null ? null : (int) $variant->getAttribute('min_quantity'),
-                'cost_price' => $variant->cost_price,
+                'cost_price' => $showCost ? $variant->cost_price : null,
             ]),
             'totals' => [
                 'on_hand' => (int) ($totals?->getAttribute('on_hand') ?? 0),
-                'value' => (int) ($totals?->getAttribute('value') ?? 0),
+                'value' => $showCost ? (int) ($totals?->getAttribute('value') ?? 0) : null,
             ],
             'branches' => Branch::query()->whereIn('id', $allowed)->orderByDesc('is_default')->orderBy('name')->get(['id', 'name']),
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),

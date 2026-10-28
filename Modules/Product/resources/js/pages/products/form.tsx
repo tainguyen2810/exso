@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { History, Plus, Printer, Trash2, X } from 'lucide-react';
+import { History, Plus, Printer, X } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { ConfirmDelete } from '@/components/app/confirm-delete';
@@ -418,10 +418,15 @@ export default function ProductForm({
     };
 
     const title = product ? product.name : 'Thêm sản phẩm';
+    // Purchase price and cost are hidden without the cost permission (the
+    // server leaves them out and keeps the saved values).
+    const showCost = can('products.view_cost');
     const priceFields: [keyof VariantRow, string][] = [
         ['retail_price', 'Giá bán lẻ'],
         ['wholesale_price', 'Giá bán buôn'],
-        ['import_price', 'Giá nhập'],
+        ...(showCost
+            ? [['import_price', 'Giá nhập'] as [keyof VariantRow, string]]
+            : []),
     ];
 
     return (
@@ -430,6 +435,7 @@ export default function ProductForm({
             <DocumentForm
                 title={title}
                 backHref="/products"
+                backLabel="Quay lại danh sách sản phẩm"
                 onSubmit={submit}
                 processing={form.processing}
                 isDirty={editable}
@@ -452,9 +458,9 @@ export default function ProductForm({
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="text-destructive"
+                                            className="border-destructive text-destructive hover:bg-destructive/5 hover:text-destructive"
                                         >
-                                            <Trash2 /> Xóa
+                                            Xóa sản phẩm
                                         </Button>
                                     }
                                 />
@@ -720,7 +726,7 @@ export default function ProductForm({
                                 />
                             </Field>
                         ))}
-                        {product && single.cost_price !== undefined && (
+                        {product && showCost && single.cost_price != null && (
                             <Field label="Giá vốn (bình quân)">
                                 <Input
                                     value={formatNumber(single.cost_price)}
@@ -901,17 +907,21 @@ export default function ProductForm({
                                         }
                                     />
                                 </Field>
-                                <Field label="Giá vốn">
-                                    <MoneyInput
-                                        value={
-                                            single.opening_cost ??
-                                            single.import_price
-                                        }
-                                        onValueChange={(value) =>
-                                            setSingle({ opening_cost: value })
-                                        }
-                                    />
-                                </Field>
+                                {showCost && (
+                                    <Field label="Giá vốn">
+                                        <MoneyInput
+                                            value={
+                                                single.opening_cost ??
+                                                single.import_price
+                                            }
+                                            onValueChange={(value) =>
+                                                setSingle({
+                                                    opening_cost: value,
+                                                })
+                                            }
+                                        />
+                                    </Field>
+                                )}
                             </div>
                         )}
                         {hasAttributes && (
@@ -1018,9 +1028,11 @@ export default function ProductForm({
                                             <TableHead className="text-right">
                                                 Giá bán buôn
                                             </TableHead>
-                                            <TableHead className="text-right">
-                                                Giá nhập
-                                            </TableHead>
+                                            {showCost && (
+                                                <TableHead className="text-right">
+                                                    Giá nhập
+                                                </TableHead>
+                                            )}
                                             {initStock && !product && (
                                                 <TableHead className="text-right">
                                                     Tồn ban đầu
@@ -1093,7 +1105,11 @@ export default function ProductForm({
                                                         [
                                                             'retail_price',
                                                             'wholesale_price',
-                                                            'import_price',
+                                                            ...(showCost
+                                                                ? ([
+                                                                      'import_price',
+                                                                  ] as const)
+                                                                : []),
                                                         ] as const
                                                     ).map((field) => (
                                                         <TableCell

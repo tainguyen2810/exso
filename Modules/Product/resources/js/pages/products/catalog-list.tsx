@@ -1,9 +1,8 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Pencil, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { ConfirmDelete } from '@/components/app/confirm-delete';
-import { PageHeader } from '@/components/app/page-header';
 import { DataTable } from '@/components/data-table';
 import type { Column, TableData } from '@/components/data-table';
 import InputError from '@/components/input-error';
@@ -66,8 +65,18 @@ export default function CatalogList({
             header: 'Tên',
             sort: 'name',
             fixed: true,
-            className: 'font-medium',
-            cell: (item) => item.name,
+            cell: (item) =>
+                can('products.update') ? (
+                    <button
+                        type="button"
+                        className="text-left text-primary hover:underline"
+                        onClick={() => open(item)}
+                    >
+                        {item.name}
+                    </button>
+                ) : (
+                    item.name
+                ),
         },
         {
             key: 'products_count',
@@ -87,10 +96,13 @@ export default function CatalogList({
     return (
         <>
             <Head title={title} />
-            <div className="space-y-4 p-4 md:p-6">
-                <PageHeader
-                    title={title}
-                    description={`Dùng để phân nhóm, lọc sản phẩm và làm báo cáo. Có thể thêm ${label} mới ngay trong form sản phẩm.`}
+            <div className="px-4 pt-5 pb-10 md:px-8">
+                <DataTable
+                    tableKey={`product-${list}`}
+                    data={items}
+                    columns={columns}
+                    searchPlaceholder={`Tìm ${label}`}
+                    empty={`Chưa có ${label} nào. Có thể thêm ${label} mới ngay trong trang sản phẩm.`}
                     actions={
                         can('products.create') && (
                             <Button onClick={() => open(null)}>
@@ -98,34 +110,6 @@ export default function CatalogList({
                             </Button>
                         )
                     }
-                />
-                <DataTable
-                    tableKey={`product-${list}`}
-                    data={items}
-                    columns={columns}
-                    searchPlaceholder={`Tìm ${label}`}
-                    empty={`Chưa có ${label} nào.`}
-                    rowActions={(item) => (
-                        <>
-                            {can('products.update') && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label="Sửa"
-                                    onClick={() => open(item)}
-                                >
-                                    <Pencil className="size-4" />
-                                </Button>
-                            )}
-                            {can('products.delete') && (
-                                <ConfirmDelete
-                                    url={`/product-lists/${list}/${item.id}`}
-                                    title={`Xóa ${label} ${item.name}?`}
-                                    description={`${formatNumber(item.products_count)} sản phẩm đang thuộc ${label} này sẽ được bỏ trống ${label}.`}
-                                />
-                            )}
-                        </>
-                    )}
                 />
             </div>
             <Dialog
@@ -148,7 +132,23 @@ export default function CatalogList({
                             />
                             <InputError message={form.errors.name} />
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="gap-2">
+                            {editing && can('products.delete') && (
+                                <ConfirmDelete
+                                    url={`/product-lists/${list}/${editing.id}`}
+                                    title={`Xóa ${label} ${editing.name}?`}
+                                    description={`${formatNumber(editing.products_count)} sản phẩm đang thuộc ${label} này sẽ được bỏ trống ${label}.`}
+                                    trigger={
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="mr-auto border-destructive text-destructive hover:bg-destructive/5 hover:text-destructive"
+                                        >
+                                            Xóa
+                                        </Button>
+                                    }
+                                />
+                            )}
                             <Button
                                 type="button"
                                 variant="outline"
@@ -167,7 +167,7 @@ export default function CatalogList({
 
 CatalogList.layout = (props: { title: string; list: string }) => ({
     breadcrumbs: [
-        { title: 'Sản phẩm', href: '/products' },
+        { title: 'Cấu hình', href: '/config' },
         { title: props.title, href: `/product-lists/${props.list}` },
     ],
 });

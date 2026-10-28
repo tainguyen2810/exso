@@ -2,12 +2,10 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { PageHeader } from '@/components/app/page-header';
-import { StatusBadge } from '@/components/app/status-badge';
+import { Pill, StatusBadge } from '@/components/app/status-badge';
 import { DataTable } from '@/components/data-table';
 import type { Column, TableData } from '@/components/data-table';
 import InputError from '@/components/input-error';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -32,17 +30,10 @@ type PriceList = {
 
 const columns: Column<PriceList>[] = [
     {
-        key: 'code',
-        header: 'Mã',
-        sort: 'code',
-        fixed: true,
-        className: 'font-medium',
-        cell: (list) => list.code,
-    },
-    {
         key: 'name',
         header: 'Tên chính sách giá',
         sort: 'name',
+        fixed: true,
         cell: (list) => (
             <Link
                 href={`/price-lists/${list.id}`}
@@ -51,6 +42,12 @@ const columns: Column<PriceList>[] = [
                 {list.name}
             </Link>
         ),
+    },
+    {
+        key: 'code',
+        header: 'Mã',
+        sort: 'code',
+        cell: (list) => list.code,
     },
     {
         key: 'prices_count',
@@ -85,30 +82,20 @@ export default function PriceListsIndex({
     return (
         <>
             <Head title="Chính sách giá" />
-            <div className="space-y-4 p-4 md:p-6">
-                <PageHeader
-                    title="Chính sách giá"
-                    description="Giá bán lẻ, bán buôn, giá nhập luôn có sẵn ở mỗi phiên bản. Thêm chính sách riêng như Giá đại lý, Giá CTV."
-                    actions={
-                        can('products.create') && (
-                            <Button onClick={() => setOpen(true)}>
-                                <Plus /> Thêm chính sách giá
-                            </Button>
-                        )
-                    }
-                />
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Chính sách mặc định</CardTitle>
+            <div className="space-y-4 px-4 pt-5 pb-10 md:px-8">
+                <Card className="gap-3 py-4">
+                    <CardHeader className="px-5">
+                        <CardTitle>Chính sách giá mặc định</CardTitle>
                     </CardHeader>
-                    <CardContent className="flex flex-wrap gap-2">
+                    <CardContent className="flex flex-wrap items-center gap-2 px-5">
                         {builtIn.map((list) => (
-                            <Badge key={list.key} variant="secondary">
+                            <Pill key={list.key} tone="info">
                                 {list.name}
-                            </Badge>
+                            </Pill>
                         ))}
                         <span className="text-sm text-muted-foreground">
-                            Sửa trong form sản phẩm hoặc nhập Excel.
+                            Có sẵn ở mọi phiên bản, sửa trong trang sản phẩm
+                            hoặc nhập Excel.
                         </span>
                     </CardContent>
                 </Card>
@@ -117,7 +104,14 @@ export default function PriceListsIndex({
                     data={priceLists}
                     columns={columns}
                     searchPlaceholder="Tìm theo mã, tên"
-                    empty="Chưa có chính sách giá riêng."
+                    empty="Chưa có chính sách giá riêng như Giá đại lý, Giá CTV."
+                    actions={
+                        can('products.create') && (
+                            <Button onClick={() => setOpen(true)}>
+                                <Plus /> Thêm chính sách giá
+                            </Button>
+                        )
+                    }
                 />
             </div>
             <Dialog open={open} onOpenChange={setOpen}>
@@ -174,7 +168,7 @@ export default function PriceListsIndex({
 
 PriceListsIndex.layout = {
     breadcrumbs: [
-        { title: 'Sản phẩm', href: '/products' },
+        { title: 'Cấu hình', href: '/config' },
         { title: 'Chính sách giá', href: '/price-lists' },
     ],
 };

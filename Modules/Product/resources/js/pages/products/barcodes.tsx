@@ -3,7 +3,7 @@ import JsBarcode from 'jsbarcode';
 import { Printer, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { MoneyInput } from '@/components/app/money-input';
-import { PageHeader } from '@/components/app/page-header';
+import { TopbarActions } from '@/components/app/topbar';
 import { VariantPicker } from '@/components/app/variant-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -115,19 +115,19 @@ export default function Barcodes({
                     .print-area { position: absolute; left: 0; top: 0; }
                 }
             `}</style>
-            <div className="space-y-4 p-4 md:p-6 print:hidden">
-                <PageHeader
-                    title="In tem mã vạch"
-                    description="Chọn sản phẩm, số tem, khổ giấy rồi bấm In. Tem dùng mã vạch của phiên bản, chưa có thì dùng mã SKU."
-                    actions={
-                        <Button
-                            onClick={() => window.print()}
-                            disabled={labels.length === 0}
-                        >
-                            <Printer /> In {formatNumber(labels.length)} tem
-                        </Button>
-                    }
-                />
+            <TopbarActions>
+                <Button
+                    onClick={() => window.print()}
+                    disabled={labels.length === 0}
+                >
+                    <Printer /> In {formatNumber(labels.length)} tem
+                </Button>
+            </TopbarActions>
+            <div className="mx-auto max-w-[1200px] space-y-4 px-4 pt-5 pb-10 md:px-8 print:hidden">
+                <p className="text-sm text-muted-foreground">
+                    Chọn sản phẩm, số tem, khổ giấy rồi bấm In. Tem dùng mã vạch
+                    của phiên bản, chưa có thì dùng mã SKU.
+                </p>
                 <div className="grid items-start gap-4 lg:grid-cols-12">
                     <Card className="lg:col-span-8">
                         <CardHeader>

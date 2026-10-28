@@ -1,9 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import { Package } from 'lucide-react';
-import { PageHeader } from '@/components/app/page-header';
+import { TopbarActions } from '@/components/app/topbar';
 import { DataTable } from '@/components/data-table';
 import type { Column, FilterOption, TableData } from '@/components/data-table';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/app/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -27,8 +27,8 @@ type Movement = {
     reference_code: string | null;
     quantity: number;
     on_hand_after: number;
-    unit_cost: number;
-    cost_after: number;
+    unit_cost: number | null;
+    cost_after: number | null;
     creator: string | null;
     note: string | null;
 };
@@ -40,7 +40,7 @@ type Variant = {
     sku: string;
     barcode: string | null;
     unit: string | null;
-    cost_price: number;
+    cost_price: number | null;
     retail_price: number;
     tracks_inventory: boolean;
 };
@@ -66,7 +66,7 @@ const columns: Column<Movement>[] = [
     {
         key: 'type',
         header: 'Nghiệp vụ',
-        cell: (row) => <Badge variant="outline">{row.type_label}</Badge>,
+        cell: (row) => <Pill>{row.type_label}</Pill>,
     },
     {
         key: 'reference_code',
@@ -99,7 +99,7 @@ const columns: Column<Movement>[] = [
         key: 'cost_after',
         header: 'Giá vốn',
         className: 'text-right tabular-nums',
-        cell: (row) => formatNumber(row.cost_after),
+        cell: (row) => formatNumber(row.cost_after ?? 0),
     },
     { key: 'creator', header: 'Người thực hiện', cell: (row) => row.creator },
     {
@@ -129,22 +129,24 @@ export default function StockCard({
     return (
         <>
             <Head title={`Thẻ kho ${variant.sku}`} />
-            <div className="space-y-4 p-4 md:p-6">
-                <PageHeader
-                    title={`Thẻ kho: ${variant.name}`}
-                    description={`Mã SKU ${variant.sku}${variant.barcode ? ` · Mã vạch ${variant.barcode}` : ''}. Mọi thay đổi tồn kho đều ghi ở đây.`}
-                    actions={
-                        can('products.view') && (
-                            <Button variant="outline" asChild>
-                                <Link
-                                    href={`/products/${variant.product_id}/edit`}
-                                >
-                                    <Package /> Xem sản phẩm
-                                </Link>
-                            </Button>
-                        )
-                    }
-                />
+            {can('products.view') && (
+                <TopbarActions>
+                    <Button variant="outline" asChild>
+                        <Link href={`/products/${variant.product_id}/edit`}>
+                            <Package /> Xem sản phẩm
+                        </Link>
+                    </Button>
+                </TopbarActions>
+            )}
+            <div className="mx-auto max-w-[1200px] space-y-4 px-4 pt-5 pb-10 md:px-8">
+                <div>
+                    <h2 className="text-xl font-medium">{variant.name}</h2>
+                    <p className="text-sm text-muted-foreground">
+                        Mã SKU {variant.sku}
+                        {variant.barcode && ` · Mã vạch ${variant.barcode}`}.
+                        Mọi thay đổi tồn kho đều ghi ở đây.
+                    </p>
+                </div>
                 <div className="grid items-start gap-4 lg:grid-cols-12">
                     <Card className="lg:col-span-8">
                         <CardHeader>
@@ -202,14 +204,16 @@ export default function StockCard({
                             <CardTitle>Giá</CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">
-                                    Giá vốn bình quân
-                                </span>
-                                <span className="font-medium tabular-nums">
-                                    {formatNumber(variant.cost_price)}
-                                </span>
-                            </div>
+                            {variant.cost_price !== null && (
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">
+                                        Giá vốn bình quân
+                                    </span>
+                                    <span className="font-medium tabular-nums">
+                                        {formatNumber(variant.cost_price)}
+                                    </span>
+                                </div>
+                            )}
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">
                                     Giá bán lẻ
@@ -224,7 +228,13 @@ export default function StockCard({
                 <DataTable
                     tableKey="stock-card"
                     data={movements}
-                    columns={columns}
+                    columns={
+                        variant.cost_price === null
+                            ? columns.filter(
+                                  (column) => column.key !== 'cost_after',
+                              )
+                            : columns
+                    }
                     searchPlaceholder="Tìm theo mã chứng từ, ghi chú"
                     filters={[
                         {
@@ -258,7 +268,7 @@ export default function StockCard({
 
 StockCard.layout = {
     breadcrumbs: [
-        { title: 'Kho hàng', href: '/inventory' },
+        { title: 'Quản lý kho', href: '/inventory' },
         { title: 'Thẻ kho', href: '#' },
     ],
 };

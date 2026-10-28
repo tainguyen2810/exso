@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 use Modules\Product\Services\ProductExcel;
 use OpenSpout\Common\Exception\IOException;
+use OpenSpout\Reader\Exception\ReaderException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductImportController extends Controller
@@ -39,16 +40,17 @@ class ProductImportController extends Controller
         copy($file->getRealPath(), $path);
 
         try {
-            $result = $excel->import($path, app(CurrentBranch::class)->id($user));
+            $result = $excel->import($path, app(CurrentBranch::class)->id($user), $user->branchIds(), $user->can('products.view_cost'));
         } catch (ValidationException $exception) {
             return back()->withErrors($exception->errors());
-        } catch (IOException|\OpenSpout\Reader\Exception\ReaderException) {
+        } catch (IOException|ReaderException) {
             return back()->withErrors(['file' => 'Không đọc được tệp. Hãy dùng tệp .xlsx.']);
         } finally {
             @unlink($path);
         }
 
-        $this->toast("Đã nhập sản phẩm: thêm {$result['created']}, cập nhật {$result['updated']}.");
+        $skipped = $result['skipped_branches'] === [] ? '' : ' Bỏ qua tồn kho của chi nhánh bạn không được phân công: '.implode(', ', $result['skipped_branches']).'.';
+        $this->toast("Đã nhập sản phẩm: thêm {$result['created']}, cập nhật {$result['updated']}.{$skipped}");
 
         return to_route('products.index');
     }
