@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
-import { Pencil, Plus } from 'lucide-react';
-import { ConfirmDelete } from '@/components/app/confirm-delete';
+import { Plus } from 'lucide-react';
+import { RecordLink } from '@/components/app/record-link';
 import { PageHeader } from '@/components/app/page-header';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -33,10 +33,9 @@ export default function RolesIndex({
     return (
         <>
             <Head title="Vai trò & phân quyền" />
-            <div className="space-y-4 p-4 md:p-6">
+            <div className="space-y-4 px-4 pt-5 pb-10 md:px-8">
                 <PageHeader
                     title="Vai trò & phân quyền"
-                    description="Mỗi vai trò là một bộ quyền. Gán vai trò cho nhân viên ở trang Nhân viên."
                     actions={
                         can('roles.create') && (
                             <Button asChild>
@@ -58,14 +57,18 @@ export default function RolesIndex({
                                 <TableHead className="text-right">
                                     Nhân viên
                                 </TableHead>
-                                <TableHead className="w-24" />
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {roles.map((role) => (
                                 <TableRow key={role.id}>
-                                    <TableCell className="font-medium">
-                                        {role.name}
+                                    <TableCell>
+                                        <RecordLink
+                                            href={`/roles/${role.id}/edit`}
+                                            permission="roles.update"
+                                        >
+                                            {role.name}
+                                        </RecordLink>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {role.permissions_count}/
@@ -73,30 +76,6 @@ export default function RolesIndex({
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {role.users_count}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {can('roles.update') && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                asChild
-                                            >
-                                                <Link
-                                                    href={`/roles/${role.id}/edit`}
-                                                    aria-label="Sửa"
-                                                >
-                                                    <Pencil className="size-4" />
-                                                </Link>
-                                            </Button>
-                                        )}
-                                        {can('roles.delete') &&
-                                            role.users_count === 0 && (
-                                                <ConfirmDelete
-                                                    url={`/roles/${role.id}`}
-                                                    title={`Xóa vai trò ${role.name}?`}
-                                                    description="Vai trò chưa được gán cho ai nên có thể xóa an toàn."
-                                                />
-                                            )}
                                     </TableCell>
                                 </TableRow>
                             ))}

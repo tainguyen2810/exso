@@ -32,7 +32,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
 
     return (
-        <div className="px-4 py-6">
+        <div className="px-4 pt-5 pb-10 md:px-8">
             <Heading
                 title="Tài khoản của tôi"
                 description="Thông tin cá nhân, mật khẩu và giao diện"

@@ -11,8 +11,8 @@ export type NavItem = {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
-    /** Permission needed to see the item, e.g. "orders.view". */
-    permission?: string;
+    /** Permission needed to see the item, e.g. "orders.view"; a list means any of them. */
+    permission?: string | string[];
     children?: NavItem[];
 };
 
