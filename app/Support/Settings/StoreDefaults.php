@@ -6,6 +6,7 @@ use App\Models\OrderReason;
 use App\Models\PaymentMethod;
 use App\Models\SalesSource;
 use App\Models\TaxRate;
+use App\Support\Hooks\Hook;
 
 /**
  * Default configuration rows of a store, as in Sapo. Safe to run again:
@@ -73,5 +74,8 @@ class StoreDefaults
                 }
             }
         }
+
+        // Modules add their own defaults (e.g. customer groups).
+        Hook::filter('store.defaults', null);
     }
 }

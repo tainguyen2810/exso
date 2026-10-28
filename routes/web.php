@@ -36,16 +36,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // final layout. Each is guarded by its permission so roles can be set up
     // now. A phase that builds a page removes its line here.
     $upcoming = [
-        'orders/create' => ['Tạo đơn và giao hàng', 'G3', 'orders.create'],
-        'orders' => ['Danh sách đơn hàng', 'G3', 'orders.view'],
-        'returns' => ['Khách trả hàng', 'G3', 'orders.view'],
         'e-invoices' => ['Hóa đơn điện tử', 'G7', 'orders.view'],
         'shipping' => ['Tổng quan vận chuyển', 'G6', 'orders.view'],
         'shipments' => ['Quản lý vận đơn', 'G6', 'orders.view'],
         'cod-reconciliations' => ['Đối soát COD và phí', 'G6', 'orders.view'],
         'shipping/partners' => ['Kết nối đối tác vận chuyển', 'G6', 'orders.view'],
-        'customers' => ['Danh sách khách hàng', 'G3', 'customers.view'],
-        'customer-groups' => ['Nhóm khách hàng', 'G3', 'customers.view'],
         'cashbook/receipts' => ['Phiếu thu', 'G4', 'cashbook.view'],
         'cashbook/payments' => ['Phiếu chi', 'G4', 'cashbook.view'],
         'cashbook' => ['Sổ quỹ', 'G4', 'cashbook.view'],
@@ -55,7 +50,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'reports/inventory' => ['Báo cáo kho', 'G4', 'reports.view'],
         'reports/finance' => ['Báo cáo tài chính', 'G4', 'reports.view'],
         'reports/customers' => ['Báo cáo khách hàng', 'G4', 'reports.view'],
-        'pos' => ['Bán tại quầy', 'G3', 'pos.view'],
         'marketplaces' => ['Sàn TMĐT', 'G7', 'orders.view'],
     ];
 

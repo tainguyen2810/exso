@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Support\Settings\StoreDefaults;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
+use Modules\Customer\Database\Seeders\CustomerDemoSeeder;
+use Modules\Order\Database\Seeders\OrderDemoSeeder;
 use Modules\Product\Database\Seeders\ProductDemoSeeder;
 use Modules\Purchase\Database\Seeders\PurchaseDemoSeeder;
 
@@ -75,6 +77,8 @@ class DatabaseSeeder extends Seeder
 
             $this->call(ProductDemoSeeder::class);
             $this->call(PurchaseDemoSeeder::class);
+            $this->call(CustomerDemoSeeder::class);
+            $this->call(OrderDemoSeeder::class);
         });
     }
 }

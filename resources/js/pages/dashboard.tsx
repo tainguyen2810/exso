@@ -191,9 +191,10 @@ export default function Dashboard({
                             <Panel title="Đơn hàng chờ xử lý">
                                 <div className="grid grid-cols-2 py-4 sm:grid-cols-3 lg:grid-cols-6 lg:divide-x">
                                     {pending.map((item) => (
-                                        <div
+                                        <Link
                                             key={item.key}
-                                            className="flex flex-col items-center gap-1.5 px-2 py-2 text-center"
+                                            href={`/orders?filter[queue]=${item.key}`}
+                                            className="flex flex-col items-center gap-1.5 px-2 py-2 text-center hover:text-primary"
                                         >
                                             <span className="flex size-8 items-center justify-center rounded-full bg-accent text-primary">
                                                 <item.icon className="size-4" />
@@ -207,7 +208,7 @@ export default function Dashboard({
                                                         0,
                                                 )}
                                             </span>
-                                        </div>
+                                        </Link>
                                     ))}
                                 </div>
                             </Panel>

@@ -1,0 +1,9 @@
+{
+    "name": "Customer",
+    "alias": "customer",
+    "description": "Khách hàng: danh sách, nhóm khách (chính sách giá, chiết khấu), địa chỉ, liên hệ, ghi chú, công nợ.",
+    "keywords": [],
+    "priority": 40,
+    "providers": ["Modules\\Customer\\Providers\\CustomerServiceProvider"],
+    "files": []
+}

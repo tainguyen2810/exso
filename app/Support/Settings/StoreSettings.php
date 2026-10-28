@@ -31,6 +31,7 @@ class StoreSettings
 
         'sales.print_copies' => 1,
         'sales.allow_change_sale_time' => false,
+        'sales.allow_edit_price' => true,
         'sales.allow_cancel_after_export' => true,
         'sales.allow_negative_order' => false,
         'sales.approve_negative_order' => false,
@@ -47,6 +48,7 @@ class StoreSettings
     public const SALES_TOGGLES = [
         'Bán hàng' => [
             'sales.allow_change_sale_time' => ['Cho phép thay đổi thời gian bán hàng', 'Nhân viên được chọn ngày giờ bán khác thời điểm tạo đơn.'],
+            'sales.allow_edit_price' => ['Cho phép sửa giá khi bán hàng', 'Tắt thì đơn luôn lấy giá theo chính sách giá (chủ cửa hàng vẫn sửa được).'],
             'sales.allow_cancel_after_export' => ['Cho phép hủy đơn đã xuất kho', 'Hàng sẽ được nhập lại kho khi hủy.'],
             'sales.allow_negative_order' => ['Cho phép tạo đơn khi không đủ tồn', 'Tạo đơn đặt hàng với sản phẩm đã hết hàng.'],
             'sales.approve_negative_order' => ['Cho phép duyệt đơn khi không đủ tồn', null],

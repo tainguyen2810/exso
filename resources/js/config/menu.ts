@@ -56,7 +56,7 @@ export const menu: NavGroup[] = [
                     {
                         title: 'Khách trả hàng',
                         href: '/returns',
-                        permission: 'orders.view',
+                        permission: 'returns.view',
                     },
                 ],
             },
