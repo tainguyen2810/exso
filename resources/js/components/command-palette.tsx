@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { Search } from 'lucide-react';
+import { Package, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,9 +14,18 @@ import { configEntries, filterMenu, menu } from '@/config/menu';
 import { useCan } from '@/hooks/use-can';
 import { toUrl } from '@/lib/utils';
 
+type VariantHit = {
+    id: number;
+    product_id: number;
+    name: string;
+    sku: string;
+    barcode: string | null;
+};
+
 /**
  * Ctrl+K (⌘K on Mac): jump to any page the user can open.
- * Searching orders, customers and products is added with those modules.
+ * Also finds products by name, SKU or barcode; orders and customers come
+ * with their modules.
  */
 export function CommandPalette() {
     const [open, setOpen] = useState(false);
@@ -25,6 +34,36 @@ export function CommandPalette() {
     const settings = configEntries.filter(
         (entry) => !entry.phase && can(entry.permission),
     );
+
+    // Products by name / SKU / barcode, for users who can see products.
+    const [term, setTerm] = useState('');
+    const [variants, setVariants] = useState<VariantHit[]>([]);
+    const canSearchProducts = can('products.view');
+
+    useEffect(() => {
+        if (!canSearchProducts || term.trim().length < 2) {
+            return;
+        }
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => {
+            fetch(
+                `/products/variants/search?q=${encodeURIComponent(term.trim())}`,
+                {
+                    headers: { Accept: 'application/json' },
+                    signal: controller.signal,
+                },
+            )
+                .then((response) => response.json())
+                .then((data: VariantHit[]) => setVariants(data.slice(0, 8)))
+                .catch(() => undefined);
+        }, 150);
+
+        return () => {
+            clearTimeout(timer);
+            controller.abort();
+        };
+    }, [term, canSearchProducts]);
 
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {
@@ -72,7 +111,15 @@ export function CommandPalette() {
             </Button>
 
             <CommandDialog open={open} onOpenChange={setOpen}>
-                <CommandInput placeholder="Gõ tên chức năng..." />
+                <CommandInput
+                    placeholder={
+                        canSearchProducts
+                            ? 'Gõ tên chức năng, sản phẩm, mã SKU...'
+                            : 'Gõ tên chức năng...'
+                    }
+                    value={term}
+                    onValueChange={setTerm}
+                />
                 <CommandList>
                     <CommandEmpty>Không tìm thấy.</CommandEmpty>
                     {groups.map((group, index) => (
@@ -94,6 +141,29 @@ export function CommandPalette() {
                             )}
                         </CommandGroup>
                     ))}
+                    {term.trim().length >= 2 && variants.length > 0 && (
+                        <CommandGroup heading="Sản phẩm">
+                            {variants.map((variant) => (
+                                <CommandItem
+                                    key={variant.id}
+                                    value={`${variant.name} ${variant.sku} ${variant.barcode ?? ''} ${term}`}
+                                    onSelect={() =>
+                                        go(
+                                            `/products/${variant.product_id}/edit`,
+                                        )
+                                    }
+                                >
+                                    <Package />
+                                    <span className="flex-1 truncate">
+                                        {variant.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {variant.sku}
+                                    </span>
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    )}
                     {settings.length > 0 && (
                         <CommandGroup heading="Cấu hình">
                             {settings.map((entry) => (

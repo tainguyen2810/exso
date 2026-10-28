@@ -1,0 +1,9 @@
+{
+    "name": "Product",
+    "alias": "product",
+    "description": "Sản phẩm: phiên bản, loại, nhãn hiệu, combo, đơn vị quy đổi, chính sách giá, mã vạch.",
+    "keywords": [],
+    "priority": 10,
+    "providers": ["Modules\\Product\\Providers\\ProductServiceProvider"],
+    "files": []
+}
