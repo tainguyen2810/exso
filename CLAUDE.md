@@ -75,6 +75,11 @@ Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module).
 - Component dùng chung thêm ở G2: `MoneyInput` (số 1.234.567), `NameCombobox` (chọn hoặc gõ tên mới), `VariantPicker` (tìm phiên bản theo tên/SKU/mã vạch qua `/products/variants/search`, F3), `ConfirmDelete` có `trigger`; `ui/switch`, `ui/popover`, `ui/textarea`.
 - Prop của trang không trùng tên prop dùng chung (`auth`, `store`, `branchContext`, `name`, `sidebarOpen`), vì prop trang sẽ đè lên.
 - Ngày nhập tay dạng dd/mm/yyyy (server nhận cả d/m/Y và Y-m-d).
+- Trang cấu hình cửa hàng (`/config/*`, controller ở `app/Http/Controllers/Config`): dùng `SettingsPage` + `SettingsSection` (trái tiêu đề/mô tả, phải thẻ) và `RecordDialog` cho thêm/sửa dòng (`@/components/app/settings-page`). Xem cần `settings.view`, lưu cần `settings.update`. Mỗi trang là một mục trong `configEntries` (có `group` như Sapo).
+- Cấu hình mặc định khai báo trong `StoreSettings::DEFAULTS` (settings() tự lấy, không cần migration); dữ liệu mặc định của cửa hàng (thuế, hình thức thanh toán, nguồn bán, lý do hủy/trả) ở `StoreDefaults::install()` — chạy lại an toàn, gọi khi cài/seed/tạo cửa hàng.
+- Thuế suất lưu `rate_bp` (1000 = 10%). Mức thuế, hình thức thanh toán, nguồn bán đang là mặc định thì không xóa/tắt được; hình thức có sẵn (`is_system`) chỉ tắt, không xóa.
+- Logo cửa hàng lưu ở disk `local` (riêng tư) `tenants/<id>/...`, phát qua `/store-logo`; prop chung `store.logo_url`.
+- Xuất/nhập file ghi `file_logs`: `DataTable::export()` tự ghi; nhập file gọi `FileLog::record($module, 'import', $tenFile, 'done'|'failed', $soDong, $ghiChu)`.
 - Phím tắt giữ như Sapo: F1 lưu đơn, F3 tìm sản phẩm, F4 tìm khách, F6 chiết khấu đơn, F7 phí/chi phí, F9 thêm dịch vụ, F10 bộ lọc.
 
 ## Cách làm việc

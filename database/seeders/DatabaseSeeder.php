@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\Settings\StoreDefaults;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
 use Modules\Product\Database\Seeders\ProductDemoSeeder;
@@ -25,6 +26,7 @@ class DatabaseSeeder extends Seeder
 
         app(TenantContext::class)->run($tenant, function (): void {
             settings()->set('store.name', 'ITSO');
+            StoreDefaults::install();
 
             $main = Branch::query()->firstOrCreate(['code' => 'CN01'], ['name' => 'Chi nhánh chính', 'is_default' => true]);
             $second = Branch::query()->firstOrCreate(['code' => 'CN02'], ['name' => 'Chi nhánh Quận 3']);

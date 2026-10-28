@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Config\StoreInfoController;
 use App\Models\Branch;
 use App\Models\User;
 use App\Support\Branches\CurrentBranch;
@@ -43,7 +44,10 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
-            'store' => fn (): array => ['name' => (string) settings('store.name', config('app.name'))],
+            'store' => fn (): array => [
+                'name' => (string) settings('store.name', config('app.name')),
+                'logo_url' => $user ? StoreInfoController::logoUrl() : null,
+            ],
             'auth' => fn (): array => [
                 'user' => $user,
                 'permissions' => $user instanceof User ? $user->permissionNames() : [],

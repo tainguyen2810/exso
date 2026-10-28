@@ -5,6 +5,13 @@ use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\BranchSwitchController;
+use App\Http\Controllers\Config\FileLogController;
+use App\Http\Controllers\Config\PaymentMethodController;
+use App\Http\Controllers\Config\ReasonController;
+use App\Http\Controllers\Config\SalesSettingsController;
+use App\Http\Controllers\Config\SalesSourceController;
+use App\Http\Controllers\Config\StoreInfoController;
+use App\Http\Controllers\Config\TaxController;
 use App\Http\Controllers\Install\InstallController;
 use App\Http\Controllers\SavedViewController;
 use Illuminate\Http\Request;
@@ -69,6 +76,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         return Inertia::render('config/index');
     })->name('config.index');
+
+    // Store settings pages (Cấu hình). Reading needs settings.view, saving settings.update.
+    Route::prefix('config')->name('config.')->group(function () {
+        Route::get('store', [StoreInfoController::class, 'show'])->middleware('can:settings.view')->name('store');
+        Route::post('store', [StoreInfoController::class, 'update'])->middleware('can:settings.update')->name('store.update');
+
+        Route::get('taxes', [TaxController::class, 'index'])->middleware('can:settings.view')->name('taxes.index');
+        Route::put('taxes/defaults', [TaxController::class, 'updateDefaults'])->middleware('can:settings.update')->name('taxes.defaults');
+        Route::post('taxes', [TaxController::class, 'store'])->middleware('can:settings.update')->name('taxes.store');
+        Route::put('taxes/{taxRate}', [TaxController::class, 'update'])->middleware('can:settings.update')->name('taxes.update');
+        Route::delete('taxes/{taxRate}', [TaxController::class, 'destroy'])->middleware('can:settings.update')->name('taxes.destroy');
+
+        Route::get('payment-methods', [PaymentMethodController::class, 'index'])->middleware('can:settings.view')->name('payment-methods.index');
+        Route::put('payment-methods/defaults', [PaymentMethodController::class, 'updateDefaults'])->middleware('can:settings.update')->name('payment-methods.defaults');
+        Route::post('payment-methods', [PaymentMethodController::class, 'store'])->middleware('can:settings.update')->name('payment-methods.store');
+        Route::put('payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update'])->middleware('can:settings.update')->name('payment-methods.update');
+        Route::delete('payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy'])->middleware('can:settings.update')->name('payment-methods.destroy');
+
+        Route::get('sources', [SalesSourceController::class, 'index'])->middleware('can:settings.view')->name('sources.index');
+        Route::post('sources', [SalesSourceController::class, 'store'])->middleware('can:settings.update')->name('sources.store');
+        Route::put('sources/{salesSource}', [SalesSourceController::class, 'update'])->middleware('can:settings.update')->name('sources.update');
+        Route::delete('sources/{salesSource}', [SalesSourceController::class, 'destroy'])->middleware('can:settings.update')->name('sources.destroy');
+
+        Route::get('reasons', [ReasonController::class, 'index'])->middleware('can:settings.view')->name('reasons.index');
+        Route::put('reasons/settings', [ReasonController::class, 'updateSettings'])->middleware('can:settings.update')->name('reasons.settings');
+        Route::post('reasons', [ReasonController::class, 'store'])->middleware('can:settings.update')->name('reasons.store');
+        Route::put('reasons/{reason}', [ReasonController::class, 'update'])->middleware('can:settings.update')->name('reasons.update');
+        Route::delete('reasons/{reason}', [ReasonController::class, 'destroy'])->middleware('can:settings.update')->name('reasons.destroy');
+
+        Route::get('sales', [SalesSettingsController::class, 'show'])->middleware('can:settings.view')->name('sales');
+        Route::put('sales', [SalesSettingsController::class, 'update'])->middleware('can:settings.update')->name('sales.update');
+
+        Route::get('file-logs', [FileLogController::class, 'index'])->middleware('can:activity_log.view')->name('file-logs.index');
+    });
+
+    // Shown in the sidebar to every signed-in user of the store.
+    Route::get('store-logo', [StoreInfoController::class, 'logo'])->name('store-logo');
 
     Route::get('staff', [StaffController::class, 'index'])->middleware('can:staff.view')->name('staff.index');
     Route::post('staff/bulk', [StaffController::class, 'bulk'])->middleware('can:staff.update')->name('staff.bulk');
