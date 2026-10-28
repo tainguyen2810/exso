@@ -102,7 +102,7 @@ test('each user keeps their own saved filters', function () {
     ])->assertRedirect();
 
     $view = SavedView::query()->sole();
-    expect($view->query)->toBe(['filter' => ['status' => 'inactive'], 'sort' => 'name']);
+    expect($view->query)->toEqual(['filter' => ['status' => 'inactive'], 'sort' => 'name']);
 
     $this->actingAs($owner)->get('/staff')
         ->assertInertia(fn (Assert $page) => $page->has('staff.views', 1)->where('staff.views.0.name', 'Đang nghỉ'));
