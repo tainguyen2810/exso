@@ -116,9 +116,11 @@ return [
     /*
      * When set to true, the method for checking permissions will be registered on the gate.
      * Set this to false if you want to implement custom logic for checking permissions.
+     * EXSO: off. AppServiceProvider's Gate::before checks permissions itself so a
+     * role can be limited to a branch (see User::permissionNames()).
      */
 
-    'register_permission_check_method' => true,
+    'register_permission_check_method' => false,
 
     /*
      * When set to true, Laravel\Octane\Events\OperationTerminated event listener will be registered

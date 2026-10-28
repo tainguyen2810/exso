@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
+import { useCan } from '@/hooks/use-can';
 import type { Column, TableData } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { formatDateTime } from '@/lib/format';
@@ -111,6 +112,8 @@ export default function ActivityLogIndex({
     logs: TableData<Log>;
     users: { id: number; name: string }[];
 }) {
+    const can = useCan();
+
     return (
         <>
             <Head title="Nhật ký hoạt động" />
@@ -145,7 +148,7 @@ export default function ActivityLogIndex({
                         },
                     ]}
                     expand={(log) => <Changes log={log} />}
-                    exportable
+                    exportable={can('activity_log.export')}
                     empty="Chưa có hoạt động nào."
                 />
             </div>

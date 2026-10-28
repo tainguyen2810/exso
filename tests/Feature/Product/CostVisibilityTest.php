@@ -62,8 +62,11 @@ test('saving a product without the cost permission keeps its purchase price', fu
 
 test('staff with the cost permission see it', function () {
     $variant = costedVariant();
+    // A data permission, given per staff member (not by the role).
+    $user = staffWithRole('Nhân viên kho');
+    $user->givePermissionTo('products.view_cost');
 
-    $this->actingAs(staffWithRole('Nhân viên kho'))->get("/products/{$variant->product_id}/edit")->assertOk()
+    $this->actingAs($user)->get("/products/{$variant->product_id}/edit")->assertOk()
         ->assertInertia(fn ($page) => $page->where('product.variants.0.import_price', 900000)
             ->where('product.variants.0.cost_price', 850000));
 });

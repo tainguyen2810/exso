@@ -16,36 +16,107 @@ class Permissions
 {
     public const ACTIONS = [
         'view' => 'Xem',
+        'view_all' => 'Xem tất cả',
         'create' => 'Thêm',
         'update' => 'Sửa',
         'delete' => 'Xóa',
         'approve' => 'Duyệt',
-        'view_cost' => 'Xem giá vốn, giá nhập',
+        'cancel' => 'Hủy',
+        'ship' => 'Đóng gói và giao hàng',
+        'pay' => 'Thanh toán',
+        'export' => 'Xuất file',
+        'import' => 'Nhập file',
     ];
 
     /**
-     * Module => [label, actions]. Modules arrive phase by phase; listing them
-     * now lets roles be set up once.
+     * Module => definition, shown on the role page grouped like Sapo.
+     * Modules arrive phase by phase; listing them now lets roles be set up
+     * once. Only add actions (or modules): renaming one breaks saved roles.
      *
-     * @return array<string, array{label: string, actions: list<string>}>
+     * "view" opens the module; where a module also has "view_all", "view"
+     * only shows the records the user is in charge of (e.g. their own
+     * orders) and "view_all" shows everyone's.
+     *
+     * @return array<string, array{label: string, group: string, actions: list<string>, labels?: array<string, string>}>
      */
     public static function modules(): array
     {
         return [
-            'dashboard' => ['label' => 'Tổng quan', 'actions' => ['view']],
-            'products' => ['label' => 'Sản phẩm', 'actions' => ['view', 'create', 'update', 'delete', 'view_cost']],
-            'inventory' => ['label' => 'Kho hàng', 'actions' => ['view', 'create', 'update', 'delete', 'approve']],
-            'customers' => ['label' => 'Khách hàng', 'actions' => ['view', 'create', 'update', 'delete']],
-            'orders' => ['label' => 'Đơn hàng', 'actions' => ['view', 'create', 'update', 'delete', 'approve']],
-            'pos' => ['label' => 'Bán tại quầy', 'actions' => ['view', 'create']],
-            'cashbook' => ['label' => 'Sổ quỹ', 'actions' => ['view', 'create', 'update', 'delete', 'approve']],
-            'reports' => ['label' => 'Báo cáo', 'actions' => ['view']],
-            'staff' => ['label' => 'Nhân viên', 'actions' => ['view', 'create', 'update', 'delete']],
-            'roles' => ['label' => 'Vai trò & phân quyền', 'actions' => ['view', 'create', 'update', 'delete']],
-            'branches' => ['label' => 'Chi nhánh', 'actions' => ['view', 'create', 'update', 'delete']],
-            'settings' => ['label' => 'Cấu hình', 'actions' => ['view', 'update']],
-            'activity_log' => ['label' => 'Nhật ký hoạt động', 'actions' => ['view']],
+            'dashboard' => ['label' => 'Tổng quan', 'group' => 'Tổng quan', 'actions' => ['view']],
+            'orders' => [
+                'label' => 'Đơn hàng', 'group' => 'Đơn hàng',
+                'actions' => ['view', 'view_all', 'create', 'update', 'delete', 'approve', 'cancel', 'ship', 'pay', 'export', 'import'],
+                'labels' => ['view' => 'Xem đơn được phụ trách', 'view_all' => 'Xem tất cả đơn'],
+            ],
+            'pos' => ['label' => 'Bán tại quầy', 'group' => 'Đơn hàng', 'actions' => ['view', 'create'], 'labels' => ['create' => 'Bán hàng']],
+            'products' => [
+                'label' => 'Sản phẩm', 'group' => 'Sản phẩm',
+                'actions' => ['view', 'create', 'update', 'delete', 'export', 'import'],
+            ],
+            'inventory' => [
+                'label' => 'Kho hàng', 'group' => 'Sản phẩm',
+                'actions' => ['view', 'create', 'update', 'delete', 'approve', 'export', 'import'],
+            ],
+            'customers' => [
+                'label' => 'Khách hàng', 'group' => 'Khách hàng',
+                'actions' => ['view', 'view_all', 'create', 'update', 'delete', 'export', 'import'],
+                'labels' => ['view' => 'Xem khách được phụ trách', 'view_all' => 'Xem tất cả khách hàng'],
+            ],
+            'cashbook' => [
+                'label' => 'Phiếu thu, phiếu chi', 'group' => 'Sổ quỹ',
+                'actions' => ['view', 'create', 'update', 'delete', 'approve', 'cancel', 'export'],
+            ],
+            'reports' => ['label' => 'Báo cáo', 'group' => 'Báo cáo', 'actions' => ['view', 'export']],
+            'settings' => [
+                'label' => 'Cấu hình cửa hàng', 'group' => 'Cấu hình',
+                'actions' => ['view', 'update'],
+            ],
+            'staff' => ['label' => 'Nhân viên', 'group' => 'Cấu hình', 'actions' => ['view', 'create', 'update', 'delete', 'export']],
+            'roles' => ['label' => 'Vai trò & phân quyền', 'group' => 'Cấu hình', 'actions' => ['view', 'create', 'update', 'delete']],
+            'branches' => [
+                'label' => 'Chi nhánh', 'group' => 'Cấu hình',
+                'actions' => ['view', 'create', 'update', 'delete', 'export', 'import'],
+            ],
+            'activity_log' => ['label' => 'Nhật ký hoạt động', 'group' => 'Cấu hình', 'actions' => ['view', 'export']],
         ];
+    }
+
+    /**
+     * Data permissions, set per staff member rather than per role (like
+     * Sapo's "Phân quyền dữ liệu"). Named like the others so `can()` works.
+     *
+     * @return array<string, string>
+     */
+    public static function dataPermissions(): array
+    {
+        return [
+            'products.view_cost' => 'Xem giá vốn, giá nhập',
+            'inventory.view_transfer_price' => 'Xem giá chuyển hàng',
+        ];
+    }
+
+    /**
+     * Label of a permission for screens and errors, e.g. "Đơn hàng: Hủy".
+     */
+    public static function label(string $name): string
+    {
+        if (isset(self::dataPermissions()[$name])) {
+            return self::dataPermissions()[$name];
+        }
+
+        [$module, $action] = array_pad(explode('.', $name, 2), 2, '');
+        $definition = self::modules()[$module] ?? null;
+
+        if ($definition === null) {
+            return $name;
+        }
+
+        return $definition['label'].': '.($definition['labels'][$action] ?? self::ACTIONS[$action] ?? $action);
+    }
+
+    public static function exists(string $name): bool
+    {
+        return in_array($name, self::all(), true);
     }
 
     /**
@@ -61,7 +132,7 @@ class Permissions
             }
         }
 
-        return $names;
+        return [...$names, ...array_keys(self::dataPermissions())];
     }
 
     /**
@@ -72,20 +143,33 @@ class Permissions
     public static function defaultRoles(): array
     {
         return [
-            'Quản trị' => self::all(),
+            'Quản trị' => self::rolePermissions(),
             'Thu ngân' => [
                 'dashboard.view', 'pos.view', 'pos.create',
-                'orders.view', 'orders.create', 'customers.view', 'customers.create', 'products.view',
+                'orders.view', 'orders.view_all', 'orders.create', 'orders.pay',
+                'customers.view', 'customers.view_all', 'customers.create', 'products.view',
             ],
             'Nhân viên kho' => [
-                'dashboard.view', 'products.view', 'products.create', 'products.update', 'products.view_cost',
-                'inventory.view', 'inventory.create', 'inventory.update', 'orders.view',
+                'dashboard.view', 'products.view', 'products.create', 'products.update', 'products.export', 'products.import',
+                'inventory.view', 'inventory.create', 'inventory.update', 'inventory.export', 'inventory.import',
+                'orders.view', 'orders.view_all', 'orders.ship',
             ],
             'Kế toán' => [
-                'dashboard.view', 'cashbook.view', 'cashbook.create', 'cashbook.update', 'cashbook.approve',
-                'reports.view', 'orders.view', 'customers.view',
+                'dashboard.view', 'cashbook.view', 'cashbook.create', 'cashbook.update', 'cashbook.approve', 'cashbook.cancel', 'cashbook.export',
+                'reports.view', 'reports.export', 'orders.view', 'orders.view_all', 'orders.export',
+                'customers.view', 'customers.view_all', 'customers.export',
             ],
         ];
+    }
+
+    /**
+     * Permissions that can go in a role (all but the data permissions).
+     *
+     * @return list<string>
+     */
+    public static function rolePermissions(): array
+    {
+        return array_values(array_diff(self::all(), array_keys(self::dataPermissions())));
     }
 
     /**

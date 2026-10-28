@@ -28,6 +28,7 @@ export function DocumentForm({
     submitLabel = 'Lưu',
     aside,
     actions,
+    readOnly,
     children,
 }: {
     title: string;
@@ -41,21 +42,27 @@ export function DocumentForm({
     aside?: ReactNode;
     /** Extra buttons, e.g. delete; shown at the bottom left like Sapo. */
     actions?: ReactNode;
+    /** Why the record can only be viewed; disables the fields and Lưu. */
+    readOnly?: string | null;
     children: ReactNode;
 }) {
     const id = useId();
-    const submit = useRef(onSubmit);
-    submit.current = onSubmit;
+    const submit = useRef<(() => void) | undefined>(onSubmit);
+    submit.current = readOnly ? undefined : onSubmit;
 
     useEffect(() => {
         const onKey = (event: KeyboardEvent) => {
+            if (submit.current === undefined) {
+                return;
+            }
+
             if (
                 event.key === 'F1' ||
                 ((event.ctrlKey || event.metaKey) &&
                     event.key.toLowerCase() === 's')
             ) {
                 event.preventDefault();
-                submit.current();
+                submit.current?.();
             }
         };
         window.addEventListener('keydown', onKey);
@@ -65,7 +72,10 @@ export function DocumentForm({
 
     const handle = (event: FormEvent) => {
         event.preventDefault();
-        onSubmit();
+
+        if (!readOnly) {
+            onSubmit();
+        }
     };
 
     const saveButton = (
@@ -93,11 +103,19 @@ export function DocumentForm({
                 <Button variant="outline" asChild>
                     <Link href={backHref}>Hủy</Link>
                 </Button>
-                {saveButton}
+                {!readOnly && saveButton}
             </TopbarActions>
             <div className="mx-auto w-full max-w-[1200px] flex-1 space-y-4 px-4 pt-5 pb-10 md:px-8">
                 <h2 className="text-xl font-medium">{title}</h2>
-                <div className="grid items-start gap-4 lg:grid-cols-12">
+                {readOnly && (
+                    <div className="rounded-md border border-warning-border bg-warning-soft px-4 py-3 text-sm">
+                        {readOnly}
+                    </div>
+                )}
+                <fieldset
+                    disabled={!!readOnly}
+                    className="grid min-w-0 items-start gap-4 lg:grid-cols-12"
+                >
                     <div
                         className={cn(
                             'space-y-4',
@@ -109,13 +127,17 @@ export function DocumentForm({
                     {aside && (
                         <div className="space-y-4 lg:col-span-4">{aside}</div>
                     )}
-                </div>
+                </fieldset>
                 <div className="flex items-center gap-2 border-t pt-4">
-                    {actions}
-                    <span className="ml-auto hidden text-xs text-muted-foreground sm:inline">
-                        F1 hoặc Ctrl+S để lưu
-                    </span>
-                    {saveButton}
+                    {!readOnly && actions}
+                    {!readOnly && (
+                        <>
+                            <span className="ml-auto hidden text-xs text-muted-foreground sm:inline">
+                                F1 hoặc Ctrl+S để lưu
+                            </span>
+                            {saveButton}
+                        </>
+                    )}
                 </div>
             </div>
         </form>
