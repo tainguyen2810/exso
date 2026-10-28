@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Delete,
+    Gift,
     History,
     LogOut,
     Minus,
@@ -54,7 +55,18 @@ import type {
     PrintSize,
     StoreInfo,
 } from '../../components/receipt';
+import {
+    AppliedPromotions,
+    CouponField,
+    PromotionDialog,
+    usePromotionPreview,
+} from '../../components/promotions';
+import type {
+    PromotionChoice,
+    PromotionRequest,
+} from '../../components/promotions';
 import { lineTotal, orderTotals } from '../../components/totals';
+import type { PromotionSettings } from '../orders/form';
 
 type Line = {
     variant_id: number;
@@ -78,6 +90,10 @@ type Tab = {
     note: string;
     methodId: number | null;
     cashGiven: number | null;
+    /** Khuyến mại chosen (absent in tabs saved before G5). */
+    promotion_ids?: number[];
+    coupon_code?: string;
+    gifts?: Record<string, number>;
 };
 
 type ShiftSummary = {
@@ -104,6 +120,7 @@ type Props = {
     defaultPosMethod: number | string | null;
     requirePaidAmount: boolean;
     storeInfo: StoreInfo;
+    promotionSettings: PromotionSettings;
 };
 
 const MAX_TABS = 10;
@@ -124,6 +141,7 @@ export default function Pos(props: Props) {
         defaultPosMethod,
         requirePaidAmount,
         storeInfo,
+        promotionSettings,
     } = props;
     const { auth } = usePage().props;
     const storageKey = `exso.pos.${auth.user.id}.${branchId ?? 0}`;
@@ -167,6 +185,7 @@ export default function Pos(props: Props) {
     const [summary, setSummary] = useState<ShiftSummary | null>(shift);
     const [paying, setPaying] = useState(false);
     const [discountOpen, setDiscountOpen] = useState(false);
+    const [promotionOpen, setPromotionOpen] = useState(false);
     const [closing, setClosing] = useState(false);
     const [printSize, setPrintSize] = useState<PrintSize>(() => {
         try {
@@ -187,9 +206,40 @@ export default function Pos(props: Props) {
 
     const tab = tabs.find((item) => item.id === activeId) ?? tabs[0];
     const pricePolicy = tab.customer?.price_policy ?? 'retail_price';
-    const totals = useMemo(
-        () => orderTotals(tab.items, tab.discount, tab.discount_bp, 0),
-        [tab.items, tab.discount, tab.discount_bp],
+    // Same server pricing of promotions as the order form.
+    const promotionRequest: PromotionRequest = useMemo(
+        () => ({
+            pos: true,
+            branch_id: branchId,
+            customer_id: tab.customer?.id ?? null,
+            price_policy: pricePolicy,
+            items: tab.items.map((line) => ({
+                variant_id: line.variant_id,
+                quantity: line.quantity,
+                price: line.price,
+                discount: line.discount,
+            })),
+        }),
+        [branchId, tab.customer, pricePolicy, tab.items],
+    );
+    const promotionChoice: PromotionChoice = {
+        promotion_ids: tab.promotion_ids ?? [],
+        coupon_code: tab.coupon_code ?? '',
+        gifts: tab.gifts ?? {},
+    };
+    const promo = usePromotionPreview(promotionRequest, promotionChoice);
+    const pricedItems = tab.items.map((line, index) => ({
+        ...line,
+        discount: line.discount + promo.lineDiscount(index),
+    }));
+    const couponAmount =
+        promo.applied.find((item) => item.coupon_id !== null)?.amount ?? 0;
+    const totals = orderTotals(
+        pricedItems,
+        tab.discount,
+        tab.discount_bp,
+        0,
+        promo.orderDiscount,
     );
     const method =
         paymentMethods.find((item) => item.id === tab.methodId) ?? null;
@@ -377,6 +427,12 @@ export default function Pos(props: Props) {
             return;
         }
 
+        if (promo.loading) {
+            toast.warning('Đang tính khuyến mại, thử lại sau giây lát.');
+
+            return;
+        }
+
         if (tab.items.length === 0) {
             toast.warning('Đơn hàng chưa có sản phẩm.');
             search.current?.focus();
@@ -417,6 +473,9 @@ export default function Pos(props: Props) {
                 price: line.price,
                 discount: line.discount,
             })),
+            promotion_ids: promotionChoice.promotion_ids,
+            coupon_code: promotionChoice.coupon_code || null,
+            gifts: promotionChoice.gifts,
             payments:
                 given > 0
                     ? [
@@ -811,7 +870,20 @@ export default function Pos(props: Props) {
                                                 </td>
                                                 <td className="py-2 text-right font-medium tabular-nums">
                                                     {formatNumber(
-                                                        lineTotal(line),
+                                                        lineTotal(
+                                                            pricedItems[index],
+                                                        ),
+                                                    )}
+                                                    {promo.lineDiscount(index) >
+                                                        0 && (
+                                                        <div className="text-xs font-normal text-success">
+                                                            KM −
+                                                            {formatNumber(
+                                                                promo.lineDiscount(
+                                                                    index,
+                                                                ),
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </td>
                                                 <td className="py-2 pr-2 text-right">
@@ -838,6 +910,36 @@ export default function Pos(props: Props) {
                                                         <X className="size-4" />
                                                     </Button>
                                                 </td>
+                                            </tr>
+                                        ))}
+                                        {promo.gifts.map((gift) => (
+                                            <tr
+                                                key={`gift-${gift.promotion_id}-${gift.variant_id}`}
+                                                className="border-b bg-success/5 last:border-0"
+                                            >
+                                                <td className="py-2 pl-2">
+                                                    <Gift className="size-4 text-success" />
+                                                </td>
+                                                <td className="py-2">
+                                                    <div className="font-medium">
+                                                        {gift.name}
+                                                    </div>
+                                                    <div className="text-xs text-success">
+                                                        Quà tặng · {gift.sku}
+                                                    </div>
+                                                </td>
+                                                <td className="py-2 text-center tabular-nums">
+                                                    {formatNumber(
+                                                        gift.quantity,
+                                                    )}
+                                                </td>
+                                                <td className="py-2 text-right tabular-nums">
+                                                    0
+                                                </td>
+                                                <td className="py-2 text-right font-medium tabular-nums">
+                                                    0
+                                                </td>
+                                                <td />
                                             </tr>
                                         ))}
                                     </tbody>
@@ -889,6 +991,24 @@ export default function Pos(props: Props) {
                             placeholder="Khách lẻ · tìm khách hàng (F4)"
                         />
                         <div className="grid gap-1.5 border-t pt-3">
+                            {promotionSettings.enabled && (
+                                <div className="grid gap-1">
+                                    <button
+                                        type="button"
+                                        tabIndex={-1}
+                                        className="inline-flex items-center gap-1.5 self-start text-sm text-primary hover:underline"
+                                        onClick={() => setPromotionOpen(true)}
+                                    >
+                                        <Gift className="size-4" /> Áp dụng
+                                        chương trình khuyến mại
+                                    </button>
+                                    <AppliedPromotions
+                                        applied={promo.applied}
+                                        errors={promo.errors}
+                                        loading={promo.loading}
+                                    />
+                                </div>
+                            )}
                             <Row
                                 label={`Tổng tiền hàng (${formatNumber(totals.quantity)} sp)`}
                                 value={totals.subtotal}
@@ -905,9 +1025,21 @@ export default function Pos(props: Props) {
                                         : ''}
                                 </button>
                                 <span className="tabular-nums">
-                                    {formatNumber(totals.discount)}
+                                    {formatNumber(
+                                        totals.discount - couponAmount,
+                                    )}
                                 </span>
                             </div>
+                            {promotionSettings.coupons && (
+                                <CouponField
+                                    value={tab.coupon_code ?? ''}
+                                    onChange={(code) =>
+                                        update({ coupon_code: code })
+                                    }
+                                    error={promo.errors.coupon_code}
+                                    amount={couponAmount}
+                                />
+                            )}
                             <div className="flex justify-between text-lg font-semibold">
                                 <span>Khách phải trả</span>
                                 <span className="text-primary tabular-nums">
@@ -1141,6 +1273,20 @@ export default function Pos(props: Props) {
                     document.body,
                 )}
 
+            <PromotionDialog
+                open={promotionOpen}
+                onOpenChange={setPromotionOpen}
+                request={promotionRequest}
+                choice={promotionChoice}
+                multiple={promotionSettings.multiple}
+                onApply={(choice) => {
+                    update({
+                        promotion_ids: choice.promotion_ids,
+                        gifts: choice.gifts,
+                    });
+                    search.current?.focus();
+                }}
+            />
             <DiscountDialog
                 open={discountOpen}
                 onOpenChange={setDiscountOpen}

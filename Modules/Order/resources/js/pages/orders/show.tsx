@@ -65,6 +65,14 @@ type Order = {
     subtotal: number;
     discount: number;
     discount_bp: number | null;
+    promotion_discount: number;
+    promotions: {
+        promotion_id: number | null;
+        coupon_id: number | null;
+        name: string;
+        code: string | null;
+        amount: number;
+    }[];
     shipping_fee: number;
     total: number;
     paid: number;
@@ -90,6 +98,8 @@ type Order = {
         returned_quantity: number;
         price: number;
         discount: number;
+        promotion_discount: number;
+        is_gift: boolean;
         total: number;
         note: string | null;
         available: number | null;
@@ -457,10 +467,16 @@ export default function OrderShow({
                                                             ? ` · ${item.unit}`
                                                             : ''}
                                                     </div>
-                                                    {item.note && (
-                                                        <div className="text-xs text-muted-foreground">
-                                                            {item.note}
+                                                    {item.is_gift ? (
+                                                        <div className="text-xs text-success">
+                                                            Quà tặng khuyến mại
                                                         </div>
+                                                    ) : (
+                                                        item.note && (
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {item.note}
+                                                            </div>
+                                                        )
                                                     )}
                                                 </div>
                                             </div>
@@ -494,6 +510,14 @@ export default function OrderShow({
                                             {item.discount > 0
                                                 ? formatNumber(item.discount)
                                                 : ''}
+                                            {item.promotion_discount > 0 && (
+                                                <div className="text-xs text-success">
+                                                    gồm KM{' '}
+                                                    {formatNumber(
+                                                        item.promotion_discount,
+                                                    )}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="py-3 text-right tabular-nums">
                                             {formatNumber(item.total)}
@@ -509,6 +533,23 @@ export default function OrderShow({
                             label={`Chiết khấu${order.discount_bp ? ` (${String(order.discount_bp / 100).replace('.', ',')}%)` : ''}`}
                             value={order.discount}
                         />
+                        {order.promotions.map((promotion) => (
+                            <div
+                                key={`${promotion.promotion_id}-${promotion.coupon_id}`}
+                                className="flex justify-between gap-3 pl-3 text-xs text-success"
+                            >
+                                <span>
+                                    {promotion.coupon_id !== null
+                                        ? `Mã giảm giá ${promotion.code}`
+                                        : promotion.name}
+                                </span>
+                                <span className="tabular-nums">
+                                    {promotion.amount > 0
+                                        ? `−${formatNumber(promotion.amount)}`
+                                        : 'Quà tặng'}
+                                </span>
+                            </div>
+                        ))}
                         <Sum label="Phí giao hàng" value={order.shipping_fee} />
                         <Sum
                             label="Khách phải trả"

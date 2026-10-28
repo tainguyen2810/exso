@@ -1,0 +1,9 @@
+{
+    "name": "Promotion",
+    "alias": "promotion",
+    "description": "Khuyến mại: chương trình chiết khấu / tặng quà, mã giảm giá theo đợt phát hành, tích điểm, hạng thành viên và thanh toán bằng điểm.",
+    "keywords": [],
+    "priority": 70,
+    "providers": ["Modules\\Promotion\\Providers\\PromotionServiceProvider"],
+    "files": []
+}

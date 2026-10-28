@@ -8,6 +8,8 @@ use Modules\Order\Http\Controllers\ReturnController;
 Route::get('orders', [OrderController::class, 'index'])->middleware('can:orders.view')->name('orders.index');
 Route::get('orders/variants/search', [OrderController::class, 'searchVariants'])->name('orders.variants.search');
 Route::get('orders/variants/prices', [OrderController::class, 'reprice'])->name('orders.variants.prices');
+// "Áp dụng chương trình khuyến mại" of the order form and POS (same result for both).
+Route::post('orders/promotions', [OrderController::class, 'promotions'])->name('orders.promotions');
 Route::post('orders/bulk', [OrderController::class, 'bulk'])->middleware('can:orders.view')->name('orders.bulk');
 Route::get('orders/create', [OrderController::class, 'create'])->middleware('can:orders.create')->name('orders.create');
 Route::post('orders', [OrderController::class, 'store'])->middleware('can:orders.create')->name('orders.store');

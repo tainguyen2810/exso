@@ -1,8 +1,10 @@
 import {
+    BadgePercent,
     BarChart3,
     Building2,
     FileSpreadsheet,
     FolderTree,
+    Gift,
     History,
     LayoutGrid,
     Package,
@@ -149,6 +151,33 @@ export const menu: NavGroup[] = [
                         href: '/customer-groups',
                         permission: 'customers.view',
                     },
+                    {
+                        title: 'Tích điểm khách hàng',
+                        href: '/loyalty',
+                        permission: 'loyalty.view',
+                    },
+                ],
+            },
+            {
+                title: 'Khuyến mại',
+                href: '/promotions',
+                icon: BadgePercent,
+                children: [
+                    {
+                        title: 'Quản lý khuyến mại',
+                        href: '/promotions',
+                        permission: 'promotions.view',
+                    },
+                    {
+                        title: 'Quản lý mã giảm giá',
+                        href: '/coupons',
+                        permission: 'coupons.view',
+                    },
+                    {
+                        title: 'Cấu hình khuyến mại',
+                        href: '/promotions/settings',
+                        permission: 'promotions.view',
+                    },
                 ],
             },
             {
@@ -242,6 +271,8 @@ export const configItem: NavItem = {
         'staff.view',
         'roles.view',
         'activity_log.view',
+        'promotions.view',
+        'loyalty.view',
     ],
 };
 
@@ -361,6 +392,23 @@ export const configEntries: ConfigEntry[] = [
         href: '/config/reasons',
         icon: Undo2,
         permission: 'settings.view',
+        group: 'Thiết lập bán hàng',
+    },
+    {
+        title: 'Cấu hình khuyến mại',
+        description:
+            'Bật khuyến mại, cách áp dụng nhiều chương trình và mã giảm giá.',
+        href: '/promotions/settings',
+        icon: BadgePercent,
+        permission: 'promotions.view',
+        group: 'Thiết lập bán hàng',
+    },
+    {
+        title: 'Tích điểm khách hàng',
+        description: 'Quy đổi điểm, hạng thành viên và lịch sử điểm.',
+        href: '/loyalty',
+        icon: Gift,
+        permission: 'loyalty.view',
         group: 'Thiết lập bán hàng',
     },
     {

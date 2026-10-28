@@ -42,6 +42,15 @@ class StoreSettings
         'returns.allow_other_branch' => true,
         'returns.no_refund_smaller_exchange' => false,
         'cashbook.allow_change_date' => false,
+        // Khuyến mại (G5).
+        'promotions.enabled' => true,
+        // one: one program per order | many: several programs.
+        'promotions.apply_mode' => 'one',
+        'coupons.enabled' => true,
+        'loyalty.enabled' => false,
+        // Đồng spent for 1 point, and đồng 1 point is worth when paying.
+        'loyalty.earn_amount' => 100000,
+        'loyalty.redeem_value' => 1000,
     ];
 
     /** On/off options on the "Cấu hình bán hàng" page, grouped like Sapo. */

@@ -8,6 +8,7 @@ use App\Models\OrderReason;
 use App\Models\PaymentMethod;
 use App\Models\SalesSource;
 use App\Models\User;
+use App\Support\Branches\CurrentBranch;
 use App\Support\DataTable\DataTable;
 use App\Support\Settings\Banks;
 use Illuminate\Database\Eloquent\Builder;
@@ -185,6 +186,8 @@ class OrderController extends Controller
                 'subtotal' => $order->subtotal,
                 'discount' => $order->discount,
                 'discount_bp' => $order->discount_bp,
+                'promotion_discount' => $order->promotion_discount,
+                'promotions' => $order->promotions['applied'] ?? [],
                 'shipping_fee' => $order->shipping_fee,
                 'returned_total' => $order->returned_total,
                 'remaining' => $order->remaining(),
@@ -216,6 +219,8 @@ class OrderController extends Controller
                     'returned_quantity' => $item->returned_quantity,
                     'price' => $item->price,
                     'discount' => $item->discount,
+                    'promotion_discount' => $item->promotion_discount,
+                    'is_gift' => $item->is_gift,
                     'total' => $item->total,
                     'note' => $item->note,
                     'available' => $item->tracksStock() && $item->variant !== null && $order->isEditable()
@@ -486,6 +491,41 @@ class OrderController extends Controller
     }
 
     /**
+     * Programs the order qualifies for and the order priced with the chosen
+     * ones and the coupon. The order form and POS both call this, and
+     * saving recomputes the same way.
+     */
+    public function promotions(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->canAny(['orders.create', 'orders.update', 'pos.create']), 403);
+
+        $order = null;
+
+        if ($request->filled('order_id')) {
+            /** @var Order|null $order */
+            $order = Order::query()->find($request->integer('order_id'));
+            abort_if($order === null || ! $order->isVisibleTo($user), 404);
+        }
+
+        if (! is_array($request->input('items')) || $request->input('items') === []) {
+            return response()->json(['available' => [], 'applied' => [], 'errors' => [], 'lines' => [], 'gifts' => [], 'promotion_discount' => 0, 'totals' => null]);
+        }
+
+        $pos = $request->boolean('pos');
+        $data = $this->orderInput($request, $pos);
+
+        if ($pos && $data['branch_id'] === 0) {
+            $current = app(CurrentBranch::class)->id($user);
+            $data['branch_id'] = $current !== null && in_array($current, $user->branchIds(), true) ? $current : ($user->branchIds()[0] ?? 0);
+            $data['shipping_fee'] = 0;
+        }
+
+        return response()->json($this->orders->preview($data, $user, $order));
+    }
+
+    /**
      * Prices of given variants under another policy (when the customer or
      * the price policy of the form changes).
      */
@@ -595,13 +635,17 @@ class OrderController extends Controller
             'receiver_phone' => $order->receiver_phone,
             'shipping_address' => $order->shipping_address,
             'shipping_fee' => $order->shipping_fee,
-            'discount' => $order->discount,
+            // The typed part: promotions are applied again by the form.
+            'discount' => $order->discount - $order->promotion_discount,
             'discount_bp' => $order->discount_bp,
+            'promotion_ids' => $order->promotions['ids'] ?? [],
+            'coupon_code' => $editing ? ($order->promotions['coupon'] ?? null) : null,
+            'gifts' => (object) ($order->promotions['gifts'] ?? []),
             'note' => $order->note,
             'tags' => $order->tags,
             'reference' => $editing ? $order->reference : null,
             'expected_delivery_at' => $order->expected_delivery_at?->format('d/m/Y'),
-            'items' => $order->items->map(fn (OrderItem $item): array => [
+            'items' => $order->items->reject(fn (OrderItem $item): bool => $item->is_gift)->values()->map(fn (OrderItem $item): array => [
                 'variant_id' => $item->variant_id,
                 'product_id' => $item->product_id,
                 'name' => $item->name,
@@ -611,7 +655,7 @@ class OrderController extends Controller
                 'type' => $item->product_type,
                 'quantity' => $item->quantity,
                 'price' => $item->price,
-                'discount' => $item->discount,
+                'discount' => $item->discount - $item->promotion_discount,
                 'note' => $item->note,
                 'available' => $item->tracksStock() && $item->variant !== null ? $inventory->stockOf($item->variant, [$order->branch_id])['available'] : null,
             ])->all(),

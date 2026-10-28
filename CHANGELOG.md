@@ -4,6 +4,16 @@ Theo [Semantic Versioning](https://semver.org/lang/vi/). Bản chưa phát hành
 
 ## Chưa phát hành
 
+### G5: Khuyến mại và tích điểm
+
+- Module **Khuyến mại**: chương trình chiết khấu (theo tổng giá trị đơn, theo từng sản phẩm, sản phẩm mua thêm theo giá trị đơn, theo số lượng sản phẩm, mua sản phẩm - giảm giá sản phẩm) và tặng quà (theo tổng giá trị đơn, theo sản phẩm mua); áp dụng cho phiên bản, loại hoặc nhãn hiệu; nhiều điều kiện/mức; số lượng áp dụng tối đa; thời gian, khung giờ, ngày trong tuần/tháng; chi nhánh, nguồn đơn, nhóm khách hàng; tạm ngừng, kích hoạt, kết thúc.
+- **Mã giảm giá**: đợt phát hành (giảm % có mức tối đa hoặc số tiền), đơn tối thiểu, sản phẩm áp dụng, số lần dùng mỗi mã / mỗi khách, dùng chung với khuyến mại; thêm mã tay hoặc tạo hàng loạt ngẫu nhiên; ngừng/xóa từng mã.
+- **Cấu hình khuyến mại**: bật/tắt, áp dụng 1 hay nhiều chương trình cho một đơn, bật mã giảm giá.
+- Nút **Áp dụng chương trình khuyến mại** ở Tạo đơn và Bán tại quầy: gợi ý chương trình có lợi nhất, chọn quà tặng, nhập mã giảm giá; server tính lại khi lưu (kiểm thời gian, phạm vi, lượt dùng) nên hai màn hình cho cùng kết quả. Đơn hàng, hóa đơn hiển thị chiết khấu khuyến mại và quà tặng; hủy đơn trả lại lượt dùng.
+- **Tích điểm khách hàng**: số tiền tích 1 điểm, giá trị 1 điểm, hạng thành viên theo tổng chi tiêu với hệ số tích điểm; cộng điểm khi đơn hoàn thành, trừ khi khách trả hàng; thanh toán bằng điểm; lịch sử điểm và điều chỉnh điểm có lý do; điểm hiện ở chi tiết khách hàng và ô chọn khách.
+- Quyền mới `promotions.*`, `coupons.*`, `loyalty.view/update` (cấp cho vai trò cũ qua migration).
+- Dữ liệu mẫu chương trình khuyến mại, mã giảm giá, hạng thành viên.
+
 ### G4: Sổ quỹ và Báo cáo
 
 - Module **Sổ quỹ**: phiếu thu (RVN), phiếu chi (PVN) với tab Hoàn thành / Đã hủy, nhóm người nộp/nhận (khách hàng, nhà cung cấp, nhân viên, đối tác VC, khác), thay đổi công nợ đối tượng, hạch toán kết quả kinh doanh, in phiếu kèm số tiền bằng chữ, xuất Excel.

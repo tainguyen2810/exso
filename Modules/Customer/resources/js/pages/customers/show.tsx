@@ -145,14 +145,23 @@ const tabs = [
 type Tab = (typeof tabs)[number][0];
 
 /** Customer detail like Sapo: profile, purchase summary, then tabs. */
+/** A card added by another module (customer.panels), e.g. loyalty points. */
+type Panel = {
+    title: string;
+    href?: string | null;
+    lines: { label: string; value: string }[];
+};
+
 export default function CustomerShow({
     customer,
     orders,
     debts,
+    panels = [],
 }: {
     customer: Customer;
     orders: OrderRow[];
     debts: DebtLine[];
+    panels?: Panel[];
 }) {
     const can = useCan();
     const [tab, setTab] = useState<Tab>('orders');
@@ -251,6 +260,31 @@ export default function CustomerShow({
                                 </Line>
                             </CardContent>
                         </Card>
+                        {panels.map((panel) => (
+                            <Card key={panel.title} className="gap-0 py-0">
+                                <CardHeader className="flex-row items-center justify-between border-b px-5 py-4">
+                                    <CardTitle>{panel.title}</CardTitle>
+                                    {panel.href && (
+                                        <Link
+                                            href={panel.href}
+                                            className="text-sm text-primary hover:underline"
+                                        >
+                                            Xem lịch sử
+                                        </Link>
+                                    )}
+                                </CardHeader>
+                                <CardContent className="grid gap-2 px-5 py-4 text-sm">
+                                    {panel.lines.map((line) => (
+                                        <Line
+                                            key={line.label}
+                                            label={line.label}
+                                        >
+                                            {line.value}
+                                        </Line>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        ))}
                         {customer.tags && (
                             <Card className="gap-2 px-5 py-4">
                                 <CardTitle>Tag</CardTitle>
