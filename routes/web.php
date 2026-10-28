@@ -25,8 +25,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Business modules built in later phases. Each page is already guarded by
     // its permission so roles can be set up now.
     $upcoming = [
-        'products' => ['Sản phẩm', 'G2'],
-        'inventory' => ['Kho hàng', 'G2'],
         'customers' => ['Khách hàng', 'G3'],
         'orders' => ['Đơn hàng', 'G3'],
         'pos' => ['Bán tại quầy', 'G3'],

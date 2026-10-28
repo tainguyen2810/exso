@@ -27,6 +27,9 @@ Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module).
 - `Modules/<Module>/` = nghiệp vụ (từ G2): Models, Services, Http, Database/Migrations, resources/js, module.json.
 - `resources/js/components/ui` (shadcn), `resources/js/components` (component app), `resources/js/pages` (trang Inertia).
 - Trình cài: `routes/web.php` (`/install`), `resources/views/install` (Blade thuần, không cần build asset).
+- Module (từ G2): `Modules/<Module>/` gồm `module.json`, `Providers/<Module>ServiceProvider.php` (nạp `Database/Migrations` và `routes/web.php` với middleware `web, auth, verified`), `Models`, `Services`, `Http/Controllers`, `Database/Seeders`, `resources/js/pages`. Namespace `Modules\<Module>\` (psr-4 ở composer.json gốc, không cần merge-plugin). Bật module trong `modules_statuses.json`.
+- Trang React của module đặt ở `Modules/<Module>/resources/js/pages/<thư mục>/...`; tên trang vẫn là `products/index` (app.tsx tìm cả `resources/js/pages` và trang của module, `config/inertia.php` cũng vậy). Tên trang không được trùng giữa các module.
+- Module hiện có: `Product` (sản phẩm, phiên bản, loại, nhãn hiệu, combo, đơn vị quy đổi, chính sách giá, in mã vạch), `Inventory` (tồn kho, sổ kho, thẻ kho).
 
 ## Quy tắc nghiệp vụ (bắt buộc)
 
@@ -41,6 +44,9 @@ Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module).
 - Chi nhánh: user chỉ làm việc ở chi nhánh được gán (`$user->branchIds()`), chi nhánh đang chọn lấy từ `CurrentBranch`. Từ G2, dữ liệu theo chi nhánh phải lọc theo `branchIds()`.
 - Model nghiệp vụ quan trọng dùng trait `LogsActivity` (ghi giá trị trước/sau vào `activity_logs`, tự bỏ trường hidden).
 - Index bắt đầu bằng `tenant_id` cho các bảng lớn.
+- Sản phẩm: giá, SKU, mã vạch, giá vốn nằm ở `product_variants` (sản phẩm không thuộc tính có 1 phiên bản). Loại hình: `normal` (quản tồn), `service` (dịch vụ/license, không tồn, không lưu key), `combo` (tồn tính từ thành phần `combo_items`). Đơn vị quy đổi là một phiên bản có `base_variant_id` + `unit_ratio`; tồn kho chỉ nằm ở phiên bản gốc. SKU/mã vạch duy nhất trong cửa hàng, kể cả phiên bản đã xóa. Giá lẻ/buôn/nhập là cột; chính sách giá khác ở `price_lists` + `variant_prices`. Tạo/sửa/nhập sản phẩm đều qua `ProductService::save()`.
+- Kho: `InventoryService::move($branchId, $variant, $soLuong, StockMovement::<LOAI>, [...])` với số lượng theo đơn vị của phiên bản (tự đổi ra đơn vị gốc, combo tự tách thành phần, dịch vụ bỏ qua). Hàng nhập dùng `unit_cost` + `update_cost => true` để tính giá vốn bình quân gia quyền (trên tổng tồn mọi chi nhánh). Không cho tồn âm trừ khi sản phẩm bật `allow_negative_stock` (hoặc `allow_negative` khi khởi tạo). Giữ hàng cho đơn: `reserve()` / `release()` (Có thể bán = tồn − đang giữ). `cost_price` chỉ đổi qua InventoryService.
+- Lệnh `php artisan inventory:verify` (chạy hằng đêm 02:30) so `inventories.on_hand` với tổng `stock_movements`; lệch thì báo lỗi và ghi log.
 
 ## Quy tắc nâng cấp
 
@@ -55,8 +61,9 @@ Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module).
 - Bố cục tham khảo Sapo (sidebar tối, topbar mỏng, nội dung dạng thẻ) nhưng dùng tên, logo, màu riêng.
 - Trang danh sách: server dùng `App\Support\DataTable\DataTable::for($query, $request, '<key>')` (->search, ->filterExact, ->filterDateRange, ->filter, ->sortable, ->paginate / ->export); trang React dùng `<DataTable>` (`@/components/data-table`). Query string: `search`, `filter[key]`, `sort=-cot`, `per_page` (20/50/100). Xuất Excel = cùng route + `?export=xlsx`.
 - Thao tác hàng loạt: route `POST <module>/bulk` {action, ids}, kiểm quyền như thao tác đơn lẻ.
-- Excel: `App\Support\Excel\ExcelExport` / `ExcelImport` (OpenSpout, ghi/đọc từng dòng). Nhập: có dòng lỗi thì không nhập dòng nào, báo lỗi theo số dòng; luôn có tệp mẫu.
+- Excel: `App\Support\Excel\ExcelExport` / `ExcelImport` (OpenSpout, ghi/đọc từng dòng; `ExcelImport::read()` khi cột không cố định). Nhập: có dòng lỗi thì không nhập dòng nào, báo lỗi theo số dòng; luôn có tệp mẫu. Nhập sản phẩm nhận cả tệp xuất từ Sapo: cột `PL_<chính sách giá>`, `LC_<chi nhánh>_Tồn kho ban đầu` / `_Giá vốn khởi tạo`, các dòng cùng tên sản phẩm (hoặc cùng "Đường dẫn/alias") là các phiên bản; SKU đã có thì cập nhật, không đụng tồn kho.
 - Trang tạo/sửa dùng `DocumentForm` (+ `FormSection`) 2 cột 8/4, thanh lưu cố định, F1/Ctrl+S lưu.
+- Component dùng chung thêm ở G2: `MoneyInput` (số 1.234.567), `NameCombobox` (chọn hoặc gõ tên mới), `VariantPicker` (tìm phiên bản theo tên/SKU/mã vạch qua `/products/variants/search`, F3), `ConfirmDelete` có `trigger`; `ui/switch`, `ui/popover`, `ui/textarea`.
 - Prop của trang không trùng tên prop dùng chung (`auth`, `store`, `branchContext`, `name`, `sidebarOpen`), vì prop trang sẽ đè lên.
 - Ngày nhập tay dạng dd/mm/yyyy (server nhận cả d/m/Y và Y-m-d).
 - Phím tắt giữ như Sapo: F1 lưu đơn, F3 tìm sản phẩm, F4 tìm khách, F6 chiết khấu đơn, F7 phí/chi phí, F9 thêm dịch vụ, F10 bộ lọc.

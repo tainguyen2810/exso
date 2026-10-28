@@ -17,6 +17,7 @@ import {
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { toUrl } from '@/lib/utils';
 import type { NavGroup, NavItem } from '@/types';
 
 export function NavMain({ groups }: { groups: NavGroup[] }) {
@@ -27,6 +28,14 @@ export function NavMain({ groups }: { groups: NavGroup[] }) {
         .find((item) =>
             item.children?.some((child) => isCurrentOrParentUrl(child.href)),
         )?.title;
+
+    // Only the most specific matching child is active ("/products/barcodes"
+    // must not also light up "/products").
+    const activeChild = groups
+        .flatMap((group) => group.items)
+        .flatMap((item) => item.children ?? [])
+        .filter((child) => isCurrentOrParentUrl(child.href))
+        .sort((a, b) => toUrl(b.href).length - toUrl(a.href).length)[0];
 
     // Accordion: opening one menu group closes the others.
     const [open, setOpen] = useState<string | undefined>(activeParent);
@@ -73,9 +82,7 @@ export function NavMain({ groups }: { groups: NavGroup[] }) {
                                 <SidebarMenuSubItem key={child.title}>
                                     <SidebarMenuSubButton
                                         asChild
-                                        isActive={isCurrentOrParentUrl(
-                                            child.href,
-                                        )}
+                                        isActive={child === activeChild}
                                     >
                                         <Link href={child.href} prefetch>
                                             <span>{child.title}</span>

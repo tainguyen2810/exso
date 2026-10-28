@@ -39,12 +39,46 @@ export const menu: NavGroup[] = [
                 href: '/products',
                 icon: Package,
                 permission: 'products.view',
+                children: [
+                    {
+                        title: 'Danh sách sản phẩm',
+                        href: '/products',
+                        permission: 'products.view',
+                    },
+                    {
+                        title: 'Loại sản phẩm',
+                        href: '/product-lists/categories',
+                        permission: 'products.view',
+                    },
+                    {
+                        title: 'Nhãn hiệu',
+                        href: '/product-lists/brands',
+                        permission: 'products.view',
+                    },
+                    {
+                        title: 'Chính sách giá',
+                        href: '/price-lists',
+                        permission: 'products.view',
+                    },
+                    {
+                        title: 'In mã vạch',
+                        href: '/products/barcodes',
+                        permission: 'products.view',
+                    },
+                ],
             },
             {
                 title: 'Kho hàng',
                 href: '/inventory',
                 icon: Warehouse,
                 permission: 'inventory.view',
+                children: [
+                    {
+                        title: 'Tồn kho',
+                        href: '/inventory',
+                        permission: 'inventory.view',
+                    },
+                ],
             },
             {
                 title: 'Khách hàng',

@@ -1,0 +1,97 @@
+<?php
+
+namespace Modules\Inventory\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Models\Branch;
+use App\Models\User;
+use App\Support\DataTable\DataTable;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+use Modules\Inventory\Models\Inventory;
+use Modules\Inventory\Models\StockMovement;
+use Modules\Product\Models\ProductVariant;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+/**
+ * "Thẻ kho": every stock movement of one variant, newest first.
+ */
+class StockCardController extends Controller
+{
+    public function show(Request $request, ProductVariant $variant): Response|StreamedResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $branchIds = $user->branchIds();
+        $variant->load('product');
+
+        $table = DataTable::for(
+            StockMovement::query()->with(['branch:id,name', 'creator:id,name'])->where('variant_id', $variant->id)->whereIn('branch_id', $branchIds),
+            $request,
+            'stock-card',
+        )
+            ->search(['reference_code', 'note'])
+            ->filterExact('branch_id')
+            ->filterExact('type')
+            ->filterDateRange('created_at')
+            ->sortable(['created_at'], '-id');
+
+        if ($request->query('export') === 'xlsx') {
+            return $table->export("the-kho-{$variant->sku}", [
+                'Thời gian' => fn (StockMovement $movement) => $movement->created_at?->setTimezone((string) config('app.timezone')),
+                'Chi nhánh' => fn (StockMovement $movement) => $movement->branch->name,
+                'Loại' => fn (StockMovement $movement) => $movement->typeLabel(),
+                'Chứng từ' => fn (StockMovement $movement) => $movement->reference_code,
+                'Thay đổi' => fn (StockMovement $movement) => $movement->quantity,
+                'Tồn sau' => fn (StockMovement $movement) => $movement->on_hand_after,
+                'Giá vốn' => fn (StockMovement $movement) => $movement->cost_after,
+                'Người thực hiện' => fn (StockMovement $movement) => $movement->creator?->name,
+                'Ghi chú' => fn (StockMovement $movement) => $movement->note,
+            ]);
+        }
+
+        return Inertia::render('inventory/stock-card', [
+            'variant' => [
+                'id' => $variant->id,
+                'product_id' => $variant->product_id,
+                'name' => $variant->name,
+                'sku' => $variant->sku,
+                'barcode' => $variant->barcode,
+                'unit' => $variant->unit,
+                'cost_price' => $variant->cost_price,
+                'retail_price' => $variant->retail_price,
+                'tracks_inventory' => $variant->product->tracksInventory() && $variant->base_variant_id === null,
+            ],
+            'stock' => Inventory::query()
+                ->with('branch:id,name')
+                ->where('variant_id', $variant->id)
+                ->whereIn('branch_id', $branchIds)
+                ->get()
+                ->map(fn (Inventory $inventory): array => [
+                    'branch_id' => $inventory->branch_id,
+                    'branch' => $inventory->branch->name,
+                    'on_hand' => $inventory->on_hand,
+                    'reserved' => $inventory->reserved,
+                    'available' => $inventory->available(),
+                ])
+                ->values(),
+            'movements' => $table->paginate(fn (StockMovement $movement): array => [
+                'id' => $movement->id,
+                'created_at' => $movement->created_at?->toIso8601String(),
+                'branch' => $movement->branch->name,
+                'type' => $movement->type,
+                'type_label' => $movement->typeLabel(),
+                'reference_code' => $movement->reference_code,
+                'quantity' => $movement->quantity,
+                'on_hand_after' => $movement->on_hand_after,
+                'unit_cost' => $movement->unit_cost,
+                'cost_after' => $movement->cost_after,
+                'creator' => $movement->creator?->name,
+                'note' => $movement->note,
+            ]),
+            'branches' => Branch::query()->whereIn('id', $branchIds)->orderBy('name')->get(['id', 'name']),
+            'types' => array_map(fn (string $value, string $label): array => ['value' => $value, 'label' => $label], array_keys(StockMovement::TYPES), StockMovement::TYPES),
+        ]);
+    }
+}

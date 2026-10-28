@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
+use Modules\Product\Database\Seeders\ProductDemoSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -53,6 +54,8 @@ class DatabaseSeeder extends Seeder
                 $user->branches()->attach($branch);
                 $user->assignRole($role);
             }
+
+            $this->call(ProductDemoSeeder::class);
         });
     }
 }
