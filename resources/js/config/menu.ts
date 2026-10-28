@@ -1,6 +1,7 @@
 import {
     BarChart3,
     Building2,
+    FileSpreadsheet,
     FolderTree,
     History,
     LayoutGrid,
@@ -14,6 +15,7 @@ import {
     Tag,
     Tags,
     Truck,
+    Undo2,
     UserRound,
     Users,
     Wallet,
@@ -249,9 +251,17 @@ export type ConfigEntry = {
     href: string;
     icon: LucideIcon;
     permission: string;
+    /** Section on the Cấu hình page, as in Sapo. */
+    group: (typeof configGroups)[number];
     /** Phase that builds it; the card is shown greyed out until then. */
     phase?: string;
 };
+
+export const configGroups = [
+    'Thiết lập cửa hàng',
+    'Thiết lập bán hàng',
+    'Nhật ký',
+] as const;
 
 /** Cards on the Cấu hình page. */
 export const configEntries: ConfigEntry[] = [
@@ -261,7 +271,7 @@ export const configEntries: ConfigEntry[] = [
         href: '/config/store',
         icon: Store,
         permission: 'settings.view',
-        phase: 'tiếp theo',
+        group: 'Thiết lập cửa hàng',
     },
     {
         title: 'Quản lý chi nhánh',
@@ -269,13 +279,15 @@ export const configEntries: ConfigEntry[] = [
         href: '/branches',
         icon: Building2,
         permission: 'branches.view',
+        group: 'Thiết lập cửa hàng',
     },
     {
         title: 'Nhân viên',
-        description: 'Tài khoản nhân viên, chi nhánh làm việc và trạng thái.',
+        description: 'Tài khoản nhân viên, vai trò và chi nhánh làm việc.',
         href: '/staff',
         icon: Users,
         permission: 'staff.view',
+        group: 'Thiết lập cửa hàng',
     },
     {
         title: 'Vai trò và phân quyền',
@@ -283,27 +295,7 @@ export const configEntries: ConfigEntry[] = [
         href: '/roles',
         icon: ShieldCheck,
         permission: 'roles.view',
-    },
-    {
-        title: 'Chính sách giá',
-        description: 'Giá bán lẻ, bán buôn, giá nhập và các bảng giá riêng.',
-        href: '/price-lists',
-        icon: Tags,
-        permission: 'products.update',
-    },
-    {
-        title: 'Loại sản phẩm',
-        description: 'Nhóm sản phẩm để lọc, báo cáo và áp khuyến mại.',
-        href: '/product-lists/categories',
-        icon: FolderTree,
-        permission: 'products.update',
-    },
-    {
-        title: 'Nhãn hiệu',
-        description: 'Thương hiệu của sản phẩm.',
-        href: '/product-lists/brands',
-        icon: Tag,
-        permission: 'products.update',
+        group: 'Thiết lập cửa hàng',
     },
     {
         title: 'Thuế',
@@ -311,15 +303,49 @@ export const configEntries: ConfigEntry[] = [
         href: '/config/taxes',
         icon: Receipt,
         permission: 'settings.view',
-        phase: 'tiếp theo',
+        group: 'Thiết lập cửa hàng',
     },
     {
-        title: 'Hình thức thanh toán',
-        description: 'Tiền mặt, chuyển khoản, ví điện tử, COD.',
+        title: 'Chính sách giá',
+        description: 'Giá bán lẻ, bán buôn, giá nhập và các bảng giá riêng.',
+        href: '/price-lists',
+        icon: Tags,
+        permission: 'products.update',
+        group: 'Thiết lập cửa hàng',
+    },
+    {
+        title: 'Thanh toán',
+        description:
+            'Tiền mặt, chuyển khoản (VietQR), ví điện tử, COD và mặc định.',
         href: '/config/payment-methods',
         icon: Wallet,
         permission: 'settings.view',
-        phase: 'tiếp theo',
+        group: 'Thiết lập cửa hàng',
+    },
+    {
+        title: 'Loại sản phẩm',
+        description: 'Nhóm sản phẩm để lọc, báo cáo và áp khuyến mại.',
+        href: '/product-lists/categories',
+        icon: FolderTree,
+        permission: 'products.update',
+        group: 'Thiết lập cửa hàng',
+    },
+    {
+        title: 'Nhãn hiệu',
+        description: 'Thương hiệu của sản phẩm.',
+        href: '/product-lists/brands',
+        icon: Tag,
+        permission: 'products.update',
+        group: 'Thiết lập cửa hàng',
+    },
+    {
+        title: 'Cấu hình bán hàng',
+        description:
+            'Quy tắc khi bán, tồn kho âm, bán tại quầy, đổi trả và in hóa đơn.',
+        href: '/config/sales',
+        icon: ShoppingCart,
+        permission: 'settings.view',
+        group: 'Thiết lập bán hàng',
     },
     {
         title: 'Nguồn bán hàng',
@@ -327,15 +353,23 @@ export const configEntries: ConfigEntry[] = [
         href: '/config/sources',
         icon: ShoppingBag,
         permission: 'settings.view',
-        phase: 'tiếp theo',
+        group: 'Thiết lập bán hàng',
     },
     {
-        title: 'Cấu hình bán hàng',
-        description: 'Quy tắc khi tạo đơn, tồn kho âm, in hóa đơn.',
-        href: '/config/sales',
-        icon: ShoppingCart,
+        title: 'Lý do hủy, trả hàng',
+        description: 'Danh sách lý do và bắt buộc chọn lý do khi hủy, trả.',
+        href: '/config/reasons',
+        icon: Undo2,
         permission: 'settings.view',
-        phase: 'tiếp theo',
+        group: 'Thiết lập bán hàng',
+    },
+    {
+        title: 'Xuất/nhập file',
+        description: 'Lịch sử xuất, nhập file Excel của nhân viên.',
+        href: '/config/file-logs',
+        icon: FileSpreadsheet,
+        permission: 'activity_log.view',
+        group: 'Nhật ký',
     },
     {
         title: 'Nhật ký hoạt động',
@@ -343,6 +377,7 @@ export const configEntries: ConfigEntry[] = [
         href: '/activity-log',
         icon: History,
         permission: 'activity_log.view',
+        group: 'Nhật ký',
     },
 ];
 

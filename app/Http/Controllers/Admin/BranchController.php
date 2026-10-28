@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\FileLog;
 use App\Support\DataTable\DataTable;
 use App\Support\Excel\ExcelExport;
 use App\Support\Excel\ExcelImport;
@@ -74,6 +75,8 @@ class BranchController extends Controller
         try {
             $rows = ExcelImport::rows($path, self::importHeadings());
         } catch (\Throwable) {
+            FileLog::record('branches', 'import', $file->getClientOriginalName(), 'failed', 0, 'Không đọc được tệp.');
+
             return back()->withErrors(['file' => 'Không đọc được tệp. Hãy dùng tệp mẫu .xlsx.']);
         } finally {
             @unlink($path);
@@ -108,6 +111,8 @@ class BranchController extends Controller
         }
 
         if ($errors !== []) {
+            FileLog::record('branches', 'import', $file->getClientOriginalName(), 'failed', count($rows), 'Có '.count($errors).' dòng lỗi.');
+
             return back()->withErrors([
                 'file' => 'Có '.count($errors).' dòng lỗi, chưa nhập dòng nào. Sửa tệp rồi nhập lại.',
                 'rows' => implode("\n", array_slice($errors, 0, 20)),
@@ -135,6 +140,8 @@ class BranchController extends Controller
                 $branch->save();
             }
         });
+
+        FileLog::record('branches', 'import', $file->getClientOriginalName(), 'done', count($rows), "Thêm {$created}, cập nhật {$updated}.");
 
         $this->toast("Đã nhập chi nhánh: thêm {$created}, cập nhật {$updated}.");
 

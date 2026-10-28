@@ -14,9 +14,13 @@ class SettingsRepository
 {
     public function __construct(protected TenantContext $tenancy) {}
 
+    /**
+     * The stored value, else $default, else the built-in default from
+     * StoreSettings::DEFAULTS.
+     */
     public function get(string $key, mixed $default = null): mixed
     {
-        return array_key_exists($key, $all = $this->all()) ? $all[$key] : $default;
+        return array_key_exists($key, $all = $this->all()) ? $all[$key] : ($default ?? StoreSettings::default($key));
     }
 
     public function set(string $key, mixed $value): void
