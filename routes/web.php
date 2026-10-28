@@ -12,6 +12,7 @@ use App\Http\Controllers\Config\SalesSettingsController;
 use App\Http\Controllers\Config\SalesSourceController;
 use App\Http\Controllers\Config\StoreInfoController;
 use App\Http\Controllers\Config\TaxController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Install\InstallController;
 use App\Http\Controllers\SavedViewController;
 use Illuminate\Http\Request;
@@ -24,7 +25,7 @@ Route::post('install', [InstallController::class, 'store'])->name('install.store
 Route::redirect('/', '/dashboard')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     Route::post('branch/switch', BranchSwitchController::class)->name('branch.switch');
 

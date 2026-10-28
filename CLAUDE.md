@@ -80,6 +80,7 @@ Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module).
 - Thuế suất lưu `rate_bp` (1000 = 10%). Mức thuế, hình thức thanh toán, nguồn bán đang là mặc định thì không xóa/tắt được; hình thức có sẵn (`is_system`) chỉ tắt, không xóa.
 - Logo cửa hàng lưu ở disk `local` (riêng tư) `tenants/<id>/...`, phát qua `/store-logo`; prop chung `store.logo_url`.
 - Xuất/nhập file ghi `file_logs`: `DataTable::export()` tự ghi; nhập file gọi `FileLog::record($module, 'import', $tenFile, 'done'|'failed', $soDong, $ghiChu)`.
+- Tổng quan (`DashboardController`): core chỉ dựng các khối như Sapo, module điền số liệu qua `Hook::addFilter('dashboard.sales' | 'dashboard.stock', fn ($value, DashboardContext $ctx) => ...)`; chỉ đếm trong `$ctx->branchIds`. Khối bán hàng gửi cho người có `reports.view` hoặc `orders.view_all` (G3 module Đơn hàng điền `today`, `chart`, `pending`, `top`, đặt `ready = true`), khối kho cần `inventory.view`, giá trị tồn cần `products.view_cost`.
 - Phím tắt giữ như Sapo: F1 lưu đơn, F3 tìm sản phẩm, F4 tìm khách, F6 chiết khấu đơn, F7 phí/chi phí, F9 thêm dịch vụ, F10 bộ lọc.
 
 ## Cách làm việc
