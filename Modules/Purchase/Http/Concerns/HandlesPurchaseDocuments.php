@@ -79,7 +79,6 @@ trait HandlesPurchaseDocuments
         ];
     }
 
-
     /**
      * @return array<string, mixed>
      */

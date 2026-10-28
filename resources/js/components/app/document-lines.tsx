@@ -101,10 +101,10 @@ export function DocumentLines<T extends LineProduct>({
                 </div>
             ) : (
                 <div className="overflow-x-auto">
-                    <Table className="[&_td]:align-middle">
+                    <Table className="[&_td]:px-2 [&_td]:align-middle [&_td:first-child]:pl-5 [&_td:last-child]:pr-5 [&_th]:px-2 [&_th:first-child]:pl-5 [&_th:last-child]:pr-5">
                         <TableHeader>
                             <TableRow className="bg-muted/50">
-                                <TableHead className="w-10 pl-5">STT</TableHead>
+                                <TableHead className="w-10">STT</TableHead>
                                 <TableHead>Sản phẩm</TableHead>
                                 {columns.map((column) => (
                                     <TableHead
@@ -125,10 +125,10 @@ export function DocumentLines<T extends LineProduct>({
                         <TableBody>
                             {lines.map((line, index) => (
                                 <TableRow key={`${line.variant_id}-${index}`}>
-                                    <TableCell className="pl-5 text-muted-foreground">
+                                    <TableCell className="text-muted-foreground">
                                         {index + 1}
                                     </TableCell>
-                                    <TableCell className="min-w-56">
+                                    <TableCell className="min-w-44">
                                         <div className="flex items-center gap-3">
                                             <ProductThumb
                                                 url={line.image_url}

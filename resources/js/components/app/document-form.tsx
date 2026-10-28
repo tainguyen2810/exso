@@ -99,10 +99,10 @@ export function DocumentForm({
             <PageTitle>
                 <Link
                     href={backHref}
-                    className="inline-flex items-center gap-1 truncate text-sm text-muted-foreground hover:text-primary"
+                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
                 >
-                    <ChevronLeft className="size-4" />
-                    {backLabel}
+                    <ChevronLeft className="size-4 shrink-0" />
+                    <span className="truncate">{backLabel}</span>
                 </Link>
             </PageTitle>
             <TopbarActions>

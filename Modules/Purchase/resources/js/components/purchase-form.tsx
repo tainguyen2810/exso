@@ -27,7 +27,6 @@ export type PurchaseLine = LineProduct & {
     quantity: number;
     price: number;
     discount: number;
-    on_hand?: number | null;
 };
 
 export type Cost = { name: string; amount: number };
@@ -170,7 +169,6 @@ export function PurchaseForm({
                 sku: variant.sku,
                 unit: variant.unit,
                 image_url: variant.image_url,
-                on_hand: variant.on_hand,
                 quantity: 1,
                 price: variant.import_price ?? 0,
                 discount: 0,
@@ -206,20 +204,12 @@ export function PurchaseForm({
 
     const columns: LineColumn<PurchaseLine>[] = [
         {
-            key: 'on_hand',
-            header: 'Tồn kho',
-            className: 'text-right tabular-nums text-muted-foreground',
-            cell: (line) =>
-                line.on_hand === null || line.on_hand === undefined
-                    ? ''
-                    : formatNumber(line.on_hand),
-        },
-        {
             key: 'quantity',
             header: 'Số lượng',
             className: 'w-28',
             cell: (line, index) => (
                 <MoneyInput
+                    className="min-w-20"
                     aria-label="Số lượng"
                     value={line.quantity}
                     aria-invalid={!!errors[`items.${index}.quantity`]}
@@ -235,6 +225,7 @@ export function PurchaseForm({
             className: 'w-36',
             cell: (line, index) => (
                 <MoneyInput
+                    className="min-w-28"
                     aria-label="Đơn giá"
                     value={line.price}
                     aria-invalid={!!errors[`items.${index}.price`]}
@@ -250,6 +241,7 @@ export function PurchaseForm({
             className: 'w-32',
             cell: (line, index) => (
                 <MoneyInput
+                    className="min-w-24"
                     aria-label="Chiết khấu"
                     value={line.discount}
                     onValueChange={(value) =>
@@ -261,7 +253,7 @@ export function PurchaseForm({
         {
             key: 'total',
             header: 'Thành tiền',
-            className: 'text-right tabular-nums pr-5',
+            className: 'text-right tabular-nums',
             cell: (line) => formatNumber(lineTotal(line)),
         },
     ];

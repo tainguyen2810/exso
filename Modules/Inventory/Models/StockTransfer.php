@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\Activity\LogsActivity;
 use App\Tenancy\BelongsToTenant;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -32,7 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read User|null $creator
  * @property-read User|null $shipper
  * @property-read User|null $receiver
- * @property-read \Illuminate\Database\Eloquent\Collection<int, StockTransferItem> $items
+ * @property-read Collection<int, StockTransferItem> $items
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */

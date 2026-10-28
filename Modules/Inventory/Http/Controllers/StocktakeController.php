@@ -200,5 +200,4 @@ class StocktakeController extends Controller
             'reasons' => ['Hư hỏng', 'Hao mòn', 'Thất lạc', 'Trả hàng', 'Khác'],
         ];
     }
-
 }

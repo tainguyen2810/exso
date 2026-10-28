@@ -108,7 +108,7 @@ export default function PurchaseOrderShow({ order }: { order: Order }) {
         {
             key: 'total',
             header: 'Thành tiền',
-            className: 'pr-5 text-right tabular-nums',
+            className: 'text-right tabular-nums',
             cell: (item) => formatNumber(item.total),
         },
     ];

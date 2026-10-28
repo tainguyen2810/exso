@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\Activity\LogsActivity;
 use App\Tenancy\BelongsToTenant;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,8 +31,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Branch $branch
  * @property-read Supplier $supplier
  * @property-read User|null $creator
- * @property-read \Illuminate\Database\Eloquent\Collection<int, PurchaseOrderItem> $items
- * @property-read \Illuminate\Database\Eloquent\Collection<int, PurchaseReceipt> $receipts
+ * @property-read Collection<int, PurchaseOrderItem> $items
+ * @property-read Collection<int, PurchaseReceipt> $receipts
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */

@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\User;
 use App\Tenancy\BelongsToTenant;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $created_by
  * @property-read Branch $branch
  * @property-read User|null $creator
- * @property-read \Illuminate\Database\Eloquent\Collection<int, PurchaseReturnItem> $items
+ * @property-read Collection<int, PurchaseReturnItem> $items
  * @property CarbonImmutable|null $created_at
  */
 class PurchaseReturn extends Model

@@ -215,6 +215,7 @@ export default function StockTransferForm({
             cell: (line, index) =>
                 editable ? (
                     <MoneyInput
+                        className="min-w-24"
                         aria-label={`Số lượng chuyển ${line.name}`}
                         aria-invalid={!!errors[`items.${index}.quantity`]}
                         value={line.quantity}
@@ -248,7 +249,7 @@ export default function StockTransferForm({
                   {
                       key: 'value',
                       header: 'Thành tiền',
-                      className: 'pr-5 text-right tabular-nums',
+                      className: 'text-right tabular-nums',
                       cell: (line: Line) =>
                           formatNumber((line.unit_cost ?? 0) * line.quantity),
                   },
@@ -303,16 +304,28 @@ export default function StockTransferForm({
             />
             <SummaryRow label="Người tạo" value={transfer.creator ?? '—'} />
             {transfer.shipped_at && (
-                <SummaryRow
-                    label="Ngày chuyển"
-                    value={`${formatDateTime(transfer.shipped_at)}${transfer.shipper ? ` · ${transfer.shipper}` : ''}`}
-                />
+                <>
+                    <SummaryRow
+                        label="Ngày chuyển"
+                        value={formatDateTime(transfer.shipped_at)}
+                    />
+                    <SummaryRow
+                        label="Người chuyển"
+                        value={transfer.shipper ?? '—'}
+                    />
+                </>
             )}
             {transfer.received_at && (
-                <SummaryRow
-                    label="Ngày nhận"
-                    value={`${formatDateTime(transfer.received_at)}${transfer.receiver ? ` · ${transfer.receiver}` : ''}`}
-                />
+                <>
+                    <SummaryRow
+                        label="Ngày nhận"
+                        value={formatDateTime(transfer.received_at)}
+                    />
+                    <SummaryRow
+                        label="Người nhận"
+                        value={transfer.receiver ?? '—'}
+                    />
+                </>
             )}
         </FormSection>
     );

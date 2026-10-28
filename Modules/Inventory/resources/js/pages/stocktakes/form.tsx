@@ -167,6 +167,7 @@ export default function StocktakeForm({
             cell: (line, index) =>
                 editable ? (
                     <MoneyInput
+                        className="min-w-24"
                         aria-label={`Tồn thực tế ${line.name}`}
                         placeholder="Nhập số đếm"
                         aria-invalid={
@@ -190,7 +191,7 @@ export default function StocktakeForm({
         {
             key: 'reason',
             header: 'Lý do',
-            className: 'w-40 pr-5',
+            className: 'w-40',
             cell: (line, index) =>
                 !editable ? (
                     (line.reason ?? '')

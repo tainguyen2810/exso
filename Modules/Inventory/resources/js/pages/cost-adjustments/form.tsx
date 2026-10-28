@@ -131,6 +131,7 @@ export default function CostAdjustmentForm({
             cell: (line, index) =>
                 editable ? (
                     <MoneyInput
+                        className="min-w-24"
                         aria-label={`Giá vốn mới ${line.name}`}
                         aria-invalid={!!errors[`items.${index}.new_cost`]}
                         value={line.new_cost}
@@ -145,7 +146,7 @@ export default function CostAdjustmentForm({
         {
             key: 'difference',
             header: 'Chênh lệch',
-            className: 'pr-5 text-right tabular-nums',
+            className: 'text-right tabular-nums',
             cell: (line) => {
                 const diff = (line.new_cost ?? 0) - (line.old_cost ?? 0);
 

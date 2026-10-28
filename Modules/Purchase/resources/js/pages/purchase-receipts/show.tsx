@@ -406,7 +406,7 @@ export default function PurchaseReceiptShow({
         {
             key: 'total',
             header: 'Thành tiền',
-            className: 'pr-5 text-right tabular-nums',
+            className: 'text-right tabular-nums',
             cell: (item) => formatNumber(item.total),
         },
     ];

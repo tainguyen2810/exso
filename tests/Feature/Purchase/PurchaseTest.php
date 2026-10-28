@@ -18,7 +18,7 @@ function supplier(array $attributes = []): Supplier
     return Supplier::query()->create(['code' => 'NCC'.fake()->unique()->numberBetween(1000, 9999), 'name' => 'Công ty Phân phối ABC', 'status' => 'active', ...$attributes]);
 }
 
-function onHand(ProductVariant $variant, ?Branch $branch = null): int
+function stockOnHand(ProductVariant $variant, ?Branch $branch = null): int
 {
     return (int) Inventory::query()->where('variant_id', $variant->id)->where('branch_id', ($branch ?? mainBranch())->id)->value('on_hand');
 }
@@ -68,7 +68,7 @@ test('receiving a receipt adds stock, averages cost with purchase costs and reco
     expect($receipt->status)->toBe(PurchaseReceipt::RECEIVED)
         ->and($receipt->code)->toBe('PN00001')
         ->and($receipt->total)->toBe(1020000)
-        ->and(onHand($variant))->toBe(20)
+        ->and(stockOnHand($variant))->toBe(20)
         // (10 × 90.000 + 10 × 102.000) / 20
         ->and($variant->cost_price)->toBe(96000)
         ->and($variant->import_price)->toBe(100000)
@@ -88,15 +88,15 @@ test('a draft receipt changes nothing until received, and totals come from the s
     $receipt = PurchaseReceipt::query()->sole();
     expect($receipt->status)->toBe(PurchaseReceipt::DRAFT)
         ->and($receipt->total)->toBe(250000)
-        ->and(onHand($variant))->toBe(0)
+        ->and(stockOnHand($variant))->toBe(0)
         ->and($abc->refresh()->debt)->toBe(0);
 
     $this->actingAs($owner)->post("/purchase-receipts/{$receipt->id}/receive")->assertSessionHasNoErrors();
-    expect(onHand($variant))->toBe(5)->and($abc->refresh()->debt)->toBe(250000);
+    expect(stockOnHand($variant))->toBe(5)->and($abc->refresh()->debt)->toBe(250000);
 
     // Received receipts cannot be received again or edited.
     $this->actingAs($owner)->post("/purchase-receipts/{$receipt->id}/receive")->assertSessionHasErrors('status');
-    expect(onHand($variant))->toBe(5);
+    expect(stockOnHand($variant))->toBe(5);
 });
 
 test('payments lower the debt and cannot exceed what is owed', function () {
@@ -126,13 +126,13 @@ test('returning goods takes them out of stock and lowers the debt', function () 
     $this->actingAs($owner)->post("/purchase-receipts/{$receipt->id}/return", ['items' => [$receipt->items[0]->id => 4]])->assertSessionHasNoErrors();
 
     // 900.000 after discount / 10 = 90.000 each
-    expect(onHand($variant))->toBe(6)
+    expect(stockOnHand($variant))->toBe(6)
         ->and($abc->refresh()->debt)->toBe(900000 - 360000)
         ->and($receipt->refresh()->returned_total)->toBe(360000)
         ->and($receipt->items()->value('returned_quantity'))->toBe(4);
 
     $this->actingAs($owner)->post("/purchase-receipts/{$receipt->id}/return", ['items' => [$receipt->items[0]->id => 7]])->assertSessionHasErrors('items');
-    expect(onHand($variant))->toBe(6);
+    expect(stockOnHand($variant))->toBe(6);
 });
 
 test('cancelling a received receipt takes the goods back out, unless they were sold', function () {
@@ -144,13 +144,13 @@ test('cancelling a received receipt takes the goods back out, unless they were s
 
     app(InventoryService::class)->move(mainBranch()->id, $variant, -3, StockMovement::SALE);
     $this->actingAs($owner)->post("/purchase-receipts/{$receipt->id}/cancel")->assertSessionHasErrors('stock');
-    expect($receipt->refresh()->status)->toBe(PurchaseReceipt::RECEIVED)->and(onHand($variant))->toBe(2);
+    expect($receipt->refresh()->status)->toBe(PurchaseReceipt::RECEIVED)->and(stockOnHand($variant))->toBe(2);
 
     app(InventoryService::class)->move(mainBranch()->id, $variant, 3, StockMovement::SALE_RETURN);
     $this->actingAs($owner)->post("/purchase-receipts/{$receipt->id}/cancel")->assertSessionHasNoErrors();
 
     expect($receipt->refresh()->status)->toBe(PurchaseReceipt::CANCELLED)
-        ->and(onHand($variant))->toBe(0)
+        ->and(stockOnHand($variant))->toBe(0)
         ->and($abc->refresh()->debt)->toBe(0);
 });
 
@@ -170,7 +170,7 @@ test('a purchase order is filled by receipts and completes when everything arriv
     expect($order->refresh()->load('items')->receiveStatus())->toBe('partial')->and($order->status)->toBe(PurchaseOrder::PENDING);
 
     $this->actingAs($owner)->post('/purchase-receipts', receiptPayload($abc, [[$variant, 4, 50000]], ['purchase_order_id' => $order->id, 'receive' => true]))->assertSessionHasNoErrors();
-    expect($order->refresh()->status)->toBe(PurchaseOrder::COMPLETED)->and(onHand($variant))->toBe(10);
+    expect($order->refresh()->status)->toBe(PurchaseOrder::COMPLETED)->and(stockOnHand($variant))->toBe(10);
 });
 
 test('closing an order without receipts cancels it', function () {
@@ -191,7 +191,7 @@ test('combos cannot be purchased and conversion units add base stock', function 
     $this->actingAs($owner)->post('/purchase-receipts', receiptPayload(supplier(), [[$combo, 1, 1000]]))->assertSessionHasErrors('items');
 
     $this->actingAs($owner)->post('/purchase-receipts', receiptPayload(supplier(), [[$box, 2, 500000]], ['receive' => true]))->assertSessionHasNoErrors();
-    expect(onHand($paper))->toBe(10)->and($paper->refresh()->cost_price)->toBe(100000);
+    expect(stockOnHand($paper))->toBe(10)->and($paper->refresh()->cost_price)->toBe(100000);
 });
 
 test('staff only see receipts of their branches', function () {
