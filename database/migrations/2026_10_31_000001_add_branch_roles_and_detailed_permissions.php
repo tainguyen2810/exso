@@ -104,6 +104,30 @@ return new class extends Migration
             ])->all());
         }
 
+        // Data permissions are per staff member: if a role carries one
+        // (an earlier build had products.view_cost as a role action), move
+        // it to the role's members.
+        foreach (array_keys(self::USER_GRANTS) as $name) {
+            if (! isset($ids[$name])) {
+                continue;
+            }
+
+            $users = DB::table('model_has_roles')
+                ->join('role_has_permissions', 'role_has_permissions.role_id', '=', 'model_has_roles.role_id')
+                ->where('role_has_permissions.permission_id', $ids[$name])
+                ->distinct()
+                ->get(['model_has_roles.model_type', 'model_has_roles.model_id', 'model_has_roles.tenant_id']);
+
+            DB::table('model_has_permissions')->insertOrIgnore($users->map(fn ($user) => [
+                'permission_id' => $ids[$name],
+                'model_type' => $user->model_type,
+                'model_id' => $user->model_id,
+                'tenant_id' => $user->tenant_id,
+            ])->all());
+
+            DB::table('role_has_permissions')->where('permission_id', $ids[$name])->delete();
+        }
+
         // Existing roles keep working in all branches.
         $assignments = DB::table('model_has_roles')
             ->join('users', 'users.id', '=', 'model_has_roles.model_id')
