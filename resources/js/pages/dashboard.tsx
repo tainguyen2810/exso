@@ -1,25 +1,46 @@
-import { Head } from '@inertiajs/react';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { Card, CardContent } from '@/components/ui/card';
+import { filterMenu, menu } from '@/config/menu';
+import { useCan } from '@/hooks/use-can';
 import { dashboard } from '@/routes';
 
 export default function Dashboard() {
+    const { auth, store } = usePage().props;
+    const can = useCan();
+    const shortcuts = filterMenu(menu, can)
+        .flatMap((group) => group.items)
+        .filter((item) => item.href !== '/dashboard');
+
     return (
         <>
-            <Head title="Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
+            <Head title="Tổng quan" />
+            <div className="space-y-4 p-4 md:p-6">
+                <div>
+                    <h1 className="text-xl font-semibold">
+                        Xin chào, {auth.user.name}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        {store.name}. Số liệu bán hàng hôm nay sẽ hiển thị ở đây
+                        từ giai đoạn G4.
+                    </p>
                 </div>
-                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {shortcuts.map((item) => (
+                        <Link key={item.title} href={item.href} prefetch>
+                            <Card className="transition-colors hover:border-primary">
+                                <CardContent className="flex items-center gap-3">
+                                    {item.icon && (
+                                        <div className="rounded-md bg-primary/10 p-2 text-primary">
+                                            <item.icon className="size-5" />
+                                        </div>
+                                    )}
+                                    <span className="font-medium">
+                                        {item.title}
+                                    </span>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    ))}
                 </div>
             </div>
         </>
@@ -29,7 +50,7 @@ export default function Dashboard() {
 Dashboard.layout = {
     breadcrumbs: [
         {
-            title: 'Dashboard',
+            title: 'Tổng quan',
             href: dashboard(),
         },
     ],

@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Authorization\Permissions;
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -20,6 +21,7 @@ abstract class TestCase extends BaseTestCase
 
         if (in_array(RefreshDatabase::class, class_uses_recursive($this), true)) {
             $this->tenant = Tenant::factory()->create(['slug' => 'main']);
+            Permissions::createDefaultRoles($this->tenant);
         }
     }
 

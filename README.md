@@ -3,7 +3,7 @@
 Phần mềm quản lý bán hàng đa kênh cho ITSO: sản phẩm, kho, đơn hàng, POS, khách hàng, sổ quỹ, báo cáo.
 Chạy được trên WAMP, aaPanel hoặc hosting PHP thường (giống WordPress), và có sẵn nền để chạy SaaS nhiều cửa hàng.
 
-> Trạng thái: **G0 — bộ khung**. Đã có đăng nhập, trình cài đặt, nền nhiều cửa hàng. Các module bán hàng làm từ G1 trở đi.
+> Trạng thái: **G1 — khung giao diện và phân quyền**. Đã có đăng nhập, trình cài đặt, nhân viên, vai trò + ma trận quyền, chi nhánh, nhật ký hoạt động. Các module bán hàng làm từ G2 trở đi.
 
 ## Yêu cầu
 
@@ -39,7 +39,7 @@ Muốn cho máy khác trong cửa hàng dùng: mở cổng 80 trên Windows Fire
 composer install && npm install
 cp .env.example .env && php artisan key:generate
 docker compose up -d          # tùy chọn: MySQL + Redis + Mailpit (hoặc dùng MySQL của WAMP)
-INSTALLER_INSTALLED=true php artisan migrate   # hoặc mở /install trên trình duyệt
+INSTALLER_INSTALLED=true php artisan migrate --seed   # dữ liệu mẫu: admin@exso.test / password (hoặc mở /install)
 composer dev                  # http://localhost:8000
 php artisan test              # chạy test
 ```

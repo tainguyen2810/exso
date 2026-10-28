@@ -23,17 +23,16 @@ export default function TwoFactorChallenge() {
     }>(() => {
         if (showRecoveryInput) {
             return {
-                title: 'Recovery code',
+                title: 'Mã khôi phục',
                 description:
-                    'Please confirm access to your account by entering one of your emergency recovery codes.',
+                    'Nhập một trong các mã khôi phục khẩn cấp của bạn.',
                 toggleText: 'login using an authentication code',
             };
         }
 
         return {
-            title: 'Authentication code',
-            description:
-                'Enter the authentication code provided by your authenticator application.',
+            title: 'Mã xác thực',
+            description: 'Nhập mã 6 số từ ứng dụng xác thực trên điện thoại.',
             toggleText: 'login using a recovery code',
         };
     }, [showRecoveryInput]);
@@ -51,7 +50,7 @@ export default function TwoFactorChallenge() {
 
     return (
         <>
-            <Head title="Two-factor authentication" />
+            <Head title="Xác thực 2 bước" />
 
             <div className="space-y-6">
                 <Form
@@ -67,7 +66,7 @@ export default function TwoFactorChallenge() {
                                     <Input
                                         name="recovery_code"
                                         type="text"
-                                        placeholder="Enter recovery code"
+                                        placeholder="Nhập mã khôi phục"
                                         autoFocus={showRecoveryInput}
                                         required
                                     />
@@ -109,7 +108,7 @@ export default function TwoFactorChallenge() {
                                 className="w-full"
                                 disabled={processing}
                             >
-                                Continue
+                                Tiếp tục
                             </Button>
 
                             <div className="text-center text-sm text-muted-foreground">

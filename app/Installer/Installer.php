@@ -2,6 +2,8 @@
 
 namespace App\Installer;
 
+use App\Authorization\Permissions;
+use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Settings\SettingsRepository;
@@ -120,9 +122,17 @@ class Installer
             'status' => 'active',
         ]);
 
+        Permissions::createDefaultRoles($tenant);
+
         $admin = $this->tenancy->run($tenant, function () use ($data): User {
             app(SettingsRepository::class)->setMany([
                 'store.name' => $data['store_name'],
+            ]);
+
+            $branch = Branch::query()->create([
+                'code' => 'CN01',
+                'name' => 'Chi nhánh chính',
+                'is_default' => true,
             ]);
 
             $admin = new User([
@@ -131,7 +141,11 @@ class Installer
                 'password' => $data['admin_password'],
             ]);
             $admin->email_verified_at = now();
+            $admin->is_owner = true;
             $admin->save();
+
+            $admin->branches()->attach($branch);
+            $admin->assignRole('Quản trị');
 
             return $admin;
         });

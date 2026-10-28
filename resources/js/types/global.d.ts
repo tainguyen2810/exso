@@ -10,7 +10,12 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
+            store: { name: string };
             auth: Auth;
+            branches: {
+                current: number | null;
+                available: { id: number; name: string }[];
+            };
             sidebarOpen: boolean;
             [key: string]: unknown;
         };
