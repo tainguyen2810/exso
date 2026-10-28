@@ -17,10 +17,13 @@ Theo [Semantic Versioning](https://semver.org/lang/vi/). Bản chưa phát hành
 - Dữ liệu mẫu khách hàng, đơn hàng, ca thu ngân.
 
 ### G2b
+
 - Nhà cung cấp và công nợ, đặt hàng nhập, nhập hàng, trả hàng nhập, kiểm hàng, chuyển hàng, điều chỉnh giá vốn.
 
 ### G2a
+
 - Sản phẩm (phiên bản, combo, đơn vị quy đổi, chính sách giá, in mã vạch), tồn kho, sổ kho, thẻ kho, nhập Excel từ Sapo.
 
 ### G0–G1c
+
 - Khung dự án, trình cài, cửa hàng (tenant), đăng nhập, vai trò theo chi nhánh, giao diện kiểu Sapo, trang Cấu hình, Tổng quan.
