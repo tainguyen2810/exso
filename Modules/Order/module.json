@@ -1,0 +1,9 @@
+{
+    "name": "Order",
+    "alias": "order",
+    "description": "Bán hàng: tạo đơn và giao hàng, danh sách đơn, thanh toán, khách trả hàng, in hóa đơn, bán tại quầy (POS) và ca làm việc.",
+    "keywords": [],
+    "priority": 50,
+    "providers": ["Modules\\Order\\Providers\\OrderServiceProvider"],
+    "files": []
+}

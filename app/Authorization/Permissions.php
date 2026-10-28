@@ -48,6 +48,11 @@ class Permissions
                 'actions' => ['view', 'view_all', 'create', 'update', 'delete', 'approve', 'cancel', 'ship', 'pay', 'export', 'import'],
                 'labels' => ['view' => 'Xem đơn được phụ trách', 'view_all' => 'Xem tất cả đơn'],
             ],
+            'returns' => [
+                'label' => 'Khách trả hàng', 'group' => 'Đơn hàng',
+                'actions' => ['view', 'create', 'pay', 'export'],
+                'labels' => ['create' => 'Tạo đơn trả hàng', 'pay' => 'Hoàn tiền'],
+            ],
             'pos' => ['label' => 'Bán tại quầy', 'group' => 'Đơn hàng', 'actions' => ['view', 'create'], 'labels' => ['create' => 'Bán hàng']],
             'products' => [
                 'label' => 'Sản phẩm', 'group' => 'Sản phẩm',
@@ -156,7 +161,8 @@ class Permissions
             'Quản trị' => self::rolePermissions(),
             'Thu ngân' => [
                 'dashboard.view', 'pos.view', 'pos.create',
-                'orders.view', 'orders.view_all', 'orders.create', 'orders.pay',
+                'orders.view', 'orders.view_all', 'orders.create', 'orders.approve', 'orders.ship', 'orders.pay',
+                'returns.view', 'returns.create', 'returns.pay',
                 'customers.view', 'customers.view_all', 'customers.create', 'products.view',
             ],
             'Nhân viên kho' => [
@@ -168,7 +174,7 @@ class Permissions
             ],
             'Kế toán' => [
                 'dashboard.view', 'cashbook.view', 'cashbook.create', 'cashbook.update', 'cashbook.approve', 'cashbook.cancel', 'cashbook.export',
-                'reports.view', 'reports.export', 'orders.view', 'orders.view_all', 'orders.export',
+                'reports.view', 'reports.export', 'orders.view', 'orders.view_all', 'orders.export', 'returns.view', 'returns.export',
                 'customers.view', 'customers.view_all', 'customers.export',
                 'suppliers.view', 'suppliers.export', 'purchases.view', 'purchases.pay', 'purchases.export',
             ],

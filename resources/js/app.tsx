@@ -37,6 +37,9 @@ void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
+            // Full screen pages: the counter (POS) and print views.
+            case name === 'pos/index' || name.endsWith('/print'):
+                return [];
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):

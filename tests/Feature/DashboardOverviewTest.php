@@ -17,7 +17,7 @@ test('the owner sees sales, stock and recent activity', function () {
 
     $this->actingAs($owner)->get('/dashboard')->assertInertia(fn (Assert $page) => $page
         ->component('dashboard')
-        ->where('sales.ready', false)
+        ->where('sales.ready', true)
         ->has('sales.chart', 7)
         ->where('sales.today.revenue', 0)
         ->where('stock.below_min', 1)
