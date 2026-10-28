@@ -89,8 +89,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('branches', [BranchController::class, 'index'])->middleware('can:branches.view')->name('branches.index');
     Route::post('branches/bulk', [BranchController::class, 'bulk'])->middleware('can:branches.update')->name('branches.bulk');
-    Route::get('branches/import/template', [BranchController::class, 'template'])->middleware('can:branches.create')->name('branches.import.template');
-    Route::post('branches/import', [BranchController::class, 'import'])->middleware('can:branches.create')->name('branches.import');
+    Route::get('branches/import/template', [BranchController::class, 'template'])->middleware('can:branches.import')->name('branches.import.template');
+    Route::post('branches/import', [BranchController::class, 'import'])->middleware('can:branches.import')->name('branches.import');
     Route::get('branches/create', [BranchController::class, 'create'])->middleware('can:branches.create')->name('branches.create');
     Route::post('branches', [BranchController::class, 'store'])->middleware('can:branches.create')->name('branches.store');
     Route::get('branches/{branch}/edit', [BranchController::class, 'edit'])->middleware('can:branches.update')->name('branches.edit');

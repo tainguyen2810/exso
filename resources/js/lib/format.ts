@@ -27,3 +27,8 @@ export function formatDateTime(value: string | null | undefined): string {
 
     return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
 }
+
+/** ISO date → "28/10/2026" in Vietnam time. */
+export function formatDate(value: string | null | undefined): string {
+    return formatDateTime(value).slice(0, 10);
+}

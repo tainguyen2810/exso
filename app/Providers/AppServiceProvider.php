@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Authorization\Permissions;
 use App\Models\User;
 use App\Support\Activity\ActivityLogger;
 use App\Support\Hooks\HookManager;
@@ -39,11 +40,23 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * The store owner can do everything; everyone else goes through roles.
+     * The store owner can do everything. Everyone else gets the permissions
+     * of the roles that apply in their current branch, plus their own data
+     * permissions; other abilities (policies) are left to Laravel.
      */
     protected function configureAuthorization(): void
     {
-        Gate::before(fn (User $user): ?bool => $user->is_owner ? true : null);
+        Gate::before(function (User $user, string $ability): ?bool {
+            if ($user->is_owner) {
+                return true;
+            }
+
+            if (! Permissions::exists($ability)) {
+                return null;
+            }
+
+            return in_array($ability, $user->permissionNames(), true);
+        });
 
         Event::listen(function (Login $event): void {
             if (! $event->user instanceof User) {

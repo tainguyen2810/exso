@@ -27,6 +27,8 @@ class BranchController extends Controller
             ->sortable(['code', 'name', 'users_count', 'created_at'], 'code');
 
         if ($request->query('export') === 'xlsx') {
+            abort_unless($request->user()?->can('branches.export'), 403);
+
             return $table->export('chi-nhanh-'.now()->format('Ymd-His'), self::exportColumns());
         }
 

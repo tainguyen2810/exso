@@ -1,34 +1,38 @@
 import { Head, useForm } from '@inertiajs/react';
-import { DocumentForm, FormSection } from '@/components/app/document-form';
 import { ConfirmDelete } from '@/components/app/confirm-delete';
+import { DocumentForm, FormSection } from '@/components/app/document-form';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCan } from '@/hooks/use-can';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 
-type Module = { key: string; label: string; actions: string[] };
+type Permission = { name: string; label: string };
+
+type Module = { key: string; label: string; permissions: Permission[] };
+
+type Group = { label: string; modules: Module[] };
 
 type Props = {
-    role: { id: number; name: string; permissions: string[] } | null;
-    modules: Module[];
-    actions: Record<string, string>;
+    role: {
+        id: number;
+        name: string;
+        description: string | null;
+        permissions: string[];
+    } | null;
+    locked: string | null;
+    groups: Group[];
+    /** Permissions the current user may hand out (all, for the owner). */
+    grantable: string[];
 };
 
-export default function RoleForm({ role, modules, actions }: Props) {
+/** Role page like Sapo: name + note, then "Phân quyền chi tiết" by group. */
+export default function RoleForm({ role, locked, groups, grantable }: Props) {
     const can = useCan();
     const form = useForm({
         name: role?.name ?? '',
+        description: role?.description ?? '',
         permissions: role?.permissions ?? ([] as string[]),
     });
 
@@ -36,13 +40,15 @@ export default function RoleForm({ role, modules, actions }: Props) {
 
     const toggle = (names: string[], on: boolean) => {
         const next = new Set(form.data.permissions);
-        names.forEach((name) => (on ? next.add(name) : next.delete(name)));
+        names
+            .filter((name) => grantable.includes(name))
+            .forEach((name) => (on ? next.add(name) : next.delete(name)));
         form.setData('permissions', [...next]);
     };
 
-    const all = modules.flatMap((module) =>
-        module.actions.map((action) => `${module.key}.${action}`),
-    );
+    const namesOf = (modules: Module[]) =>
+        modules.flatMap((module) => module.permissions.map((p) => p.name));
+    const all = namesOf(groups.flatMap((group) => group.modules));
 
     const submit = () => {
         if (role) {
@@ -62,6 +68,8 @@ export default function RoleForm({ role, modules, actions }: Props) {
                 backHref="/roles"
                 backLabel="Quay lại danh sách vai trò"
                 onSubmit={submit}
+                processing={form.processing}
+                readOnly={locked}
                 actions={
                     role &&
                     can('roles.delete') && (
@@ -81,109 +89,127 @@ export default function RoleForm({ role, modules, actions }: Props) {
                         />
                     )
                 }
-                processing={form.processing}
             >
                 <FormSection
                     title="Thông tin vai trò"
-                    className="max-w-md gap-2"
+                    className="sm:grid-cols-2"
                 >
-                    <Label htmlFor="name">Tên vai trò *</Label>
-                    <Input
-                        id="name"
-                        value={form.data.name}
-                        onChange={(e) => form.setData('name', e.target.value)}
-                        placeholder="VD: Thu ngân ca tối"
-                        autoFocus
-                    />
-                    <InputError message={form.errors.name} />
+                    <div className="grid gap-2">
+                        <Label htmlFor="name">Tên vai trò *</Label>
+                        <Input
+                            id="name"
+                            value={form.data.name}
+                            onChange={(e) =>
+                                form.setData('name', e.target.value)
+                            }
+                            placeholder="VD: Thu ngân ca tối"
+                            maxLength={100}
+                            autoFocus
+                        />
+                        <InputError message={form.errors.name} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="description">Ghi chú</Label>
+                        <Input
+                            id="description"
+                            value={form.data.description}
+                            onChange={(e) =>
+                                form.setData('description', e.target.value)
+                            }
+                            placeholder="VD: Nhân viên bán hàng ca tối"
+                            maxLength={500}
+                        />
+                        <InputError message={form.errors.description} />
+                    </div>
                 </FormSection>
-                <Card className="gap-0 py-0">
-                    <CardHeader className="flex flex-row items-center justify-between border-b px-5 py-4">
-                        <CardTitle>Phân quyền</CardTitle>
-                        <label className="flex items-center gap-2 text-sm">
-                            <Checkbox
-                                checked={all.every(has)}
-                                onCheckedChange={(checked) =>
-                                    toggle(all, checked === true)
-                                }
-                            />
-                            Chọn tất cả
-                        </label>
-                    </CardHeader>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Chức năng</TableHead>
-                                {Object.entries(actions).map(([key, label]) => (
-                                    <TableHead
-                                        key={key}
-                                        className="w-20 text-center"
-                                    >
-                                        {label}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {modules.map((module) => {
-                                const names = module.actions.map(
-                                    (action) => `${module.key}.${action}`,
-                                );
 
-                                return (
-                                    <TableRow key={module.key}>
-                                        <TableCell>
-                                            <label className="flex items-center gap-2 font-medium">
-                                                <Checkbox
-                                                    checked={names.every(has)}
-                                                    onCheckedChange={(
-                                                        checked,
-                                                    ) =>
-                                                        toggle(
-                                                            names,
-                                                            checked === true,
-                                                        )
-                                                    }
-                                                    aria-label={`Tất cả quyền ${module.label}`}
-                                                />
-                                                {module.label}
-                                            </label>
-                                        </TableCell>
-                                        {Object.keys(actions).map((action) => {
-                                            const name = `${module.key}.${action}`;
+                <FormSection
+                    title="Phân quyền chi tiết"
+                    description="Chọn các thao tác nhân viên có vai trò này được làm. Ô bị mờ là quyền bạn không có nên không cấp được."
+                    className="gap-0 p-0"
+                >
+                    <label className="flex items-center gap-2 border-b px-5 py-3 text-sm font-medium">
+                        <Checkbox
+                            checked={all.every(has)}
+                            onCheckedChange={(checked) =>
+                                toggle(all, checked === true)
+                            }
+                        />
+                        Chọn tất cả quyền
+                    </label>
+                    <InputError
+                        message={form.errors.permissions}
+                        className="px-5 pt-3"
+                    />
+                    {groups.map((group) => {
+                        const names = namesOf(group.modules);
 
-                                            return (
-                                                <TableCell
-                                                    key={action}
-                                                    className="text-center"
-                                                >
-                                                    {module.actions.includes(
-                                                        action,
-                                                    ) && (
-                                                        <Checkbox
-                                                            checked={has(name)}
-                                                            onCheckedChange={(
-                                                                checked,
-                                                            ) =>
-                                                                toggle(
-                                                                    [name],
-                                                                    checked ===
-                                                                        true,
-                                                                )
+                        return (
+                            <div
+                                key={group.label}
+                                className="grid gap-4 border-b px-5 py-4 last:border-b-0 md:grid-cols-[200px_1fr]"
+                            >
+                                <label className="flex items-start gap-2 font-medium">
+                                    <Checkbox
+                                        className="mt-0.5"
+                                        checked={names.every(has)}
+                                        onCheckedChange={(checked) =>
+                                            toggle(names, checked === true)
+                                        }
+                                        aria-label={`Tất cả quyền ${group.label}`}
+                                    />
+                                    {group.label}
+                                </label>
+                                <div className="grid gap-4">
+                                    {group.modules.map((module) => (
+                                        <div key={module.key}>
+                                            {group.modules.length > 1 && (
+                                                <div className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                                                    {module.label}
+                                                </div>
+                                            )}
+                                            <div className="grid gap-x-4 gap-y-2.5 sm:grid-cols-2 xl:grid-cols-3">
+                                                {module.permissions.map(
+                                                    (permission) => (
+                                                        <label
+                                                            key={
+                                                                permission.name
                                                             }
-                                                            aria-label={`${actions[action]} ${module.label}`}
-                                                        />
-                                                    )}
-                                                </TableCell>
-                                            );
-                                        })}
-                                    </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
-                </Card>
-                <InputError message={form.errors.permissions} />
+                                                            className="flex items-center gap-2 text-sm has-disabled:opacity-50"
+                                                        >
+                                                            <Checkbox
+                                                                checked={has(
+                                                                    permission.name,
+                                                                )}
+                                                                disabled={
+                                                                    !grantable.includes(
+                                                                        permission.name,
+                                                                    )
+                                                                }
+                                                                onCheckedChange={(
+                                                                    checked,
+                                                                ) =>
+                                                                    toggle(
+                                                                        [
+                                                                            permission.name,
+                                                                        ],
+                                                                        checked ===
+                                                                            true,
+                                                                    )
+                                                                }
+                                                            />
+                                                            {permission.label}
+                                                        </label>
+                                                    ),
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </FormSection>
             </DocumentForm>
         </>
     );

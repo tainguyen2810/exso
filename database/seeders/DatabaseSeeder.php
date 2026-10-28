@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Authorization\Permissions;
 use App\Models\Branch;
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Tenancy\TenantContext;
@@ -52,7 +53,17 @@ class DatabaseSeeder extends Seeder
                 ]);
                 $user->branches()->attach($branch);
                 $user->assignRole($role);
+                $user->roleAssignments()->create(['role_id' => Role::findByName($role)->id, 'branch_id' => null]);
             }
+
+            // Example of a role limited to one branch: cashier at the main
+            // branch, accountant only at Quận 3; can see cost prices.
+            $mixed = User::factory()->create(['name' => 'Đỗ Hoàng Nam', 'email' => 'nhanvien6@exso.test', 'phone' => '0908000006']);
+            $mixed->branches()->attach([$main->id, $second->id]);
+            $mixed->assignRole(['Thu ngân', 'Kế toán']);
+            $mixed->roleAssignments()->create(['role_id' => Role::findByName('Thu ngân')->id, 'branch_id' => $main->id]);
+            $mixed->roleAssignments()->create(['role_id' => Role::findByName('Kế toán')->id, 'branch_id' => $second->id]);
+            $mixed->givePermissionTo('products.view_cost');
         });
     }
 }

@@ -121,9 +121,9 @@ export default function BranchesIndex({
                         },
                     ]}
                     bulkActions={bulkActions}
-                    exportable
+                    exportable={can('branches.export')}
                     toolbar={
-                        can('branches.create') && (
+                        can('branches.import') && (
                             <ImportDialog
                                 url="/branches/import"
                                 templateUrl="/branches/import/template"

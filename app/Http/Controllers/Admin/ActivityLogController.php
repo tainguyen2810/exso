@@ -30,6 +30,8 @@ class ActivityLogController extends Controller
             ->sortable(['created_at'], '-id');
 
         if ($request->query('export') === 'xlsx') {
+            abort_unless($request->user()?->can('activity_log.export'), 403);
+
             return $table->export('nhat-ky-'.now()->format('Ymd-His'), [
                 'Thời gian' => fn (ActivityLog $log) => $log->created_at,
                 'Người thực hiện' => fn (ActivityLog $log) => $log->user?->name,

@@ -13,6 +13,10 @@ use Spatie\Permission\Models\Role as SpatieRole;
  * @property int $tenant_id
  * @property string $name
  * @property string $guard_name
+ * @property ?string $description
+ * @property int $permissions_count
+ * @property int $active_users_count
+ * @property int $inactive_users_count
  */
 class Role extends SpatieRole
 {

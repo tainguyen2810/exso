@@ -1,7 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-import { RecordLink } from '@/components/app/record-link';
 import { PageHeader } from '@/components/app/page-header';
+import { RecordLink } from '@/components/app/record-link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -13,12 +13,17 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useCan } from '@/hooks/use-can';
+import { formatDate, formatNumber } from '@/lib/format';
 
 type Role = {
     id: number;
     name: string;
-    users_count: number;
+    description: string | null;
     permissions_count: number;
+    active_users_count: number;
+    inactive_users_count: number;
+    created_at: string | null;
+    updated_at: string | null;
 };
 
 export default function RolesIndex({
@@ -46,17 +51,23 @@ export default function RolesIndex({
                         )
                     }
                 />
-                <Card className="gap-0 py-0">
+                <Card className="gap-0 overflow-hidden py-0">
                     <Table>
                         <TableHeader>
-                            <TableRow>
+                            <TableRow className="hover:bg-transparent">
                                 <TableHead>Vai trò</TableHead>
                                 <TableHead className="text-right">
                                     Số quyền
                                 </TableHead>
                                 <TableHead className="text-right">
-                                    Nhân viên
+                                    NV đang làm việc
                                 </TableHead>
+                                <TableHead className="text-right">
+                                    NV đã nghỉ
+                                </TableHead>
+                                <TableHead>Ngày tạo</TableHead>
+                                <TableHead>Cập nhật cuối</TableHead>
+                                <TableHead>Ghi chú</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -75,7 +86,21 @@ export default function RolesIndex({
                                         {permissionTotal}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {role.users_count}
+                                        {formatNumber(role.active_users_count)}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {formatNumber(
+                                            role.inactive_users_count,
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {formatDate(role.created_at)}
+                                    </TableCell>
+                                    <TableCell>
+                                        {formatDate(role.updated_at)}
+                                    </TableCell>
+                                    <TableCell className="max-w-64 truncate text-muted-foreground">
+                                        {role.description}
                                     </TableCell>
                                 </TableRow>
                             ))}

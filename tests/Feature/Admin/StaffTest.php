@@ -84,7 +84,15 @@ test('the owner cannot be locked or deleted', function () {
     $this->actingAs($admin)->delete("/staff/{$owner->id}");
     expect($owner->fresh())->not->toBeNull();
 
+    // Even a full admin cannot touch the owner's account (password, email...).
     $this->actingAs($admin)->put("/staff/{$owner->id}", [
+        'name' => $owner->name,
+        'email' => $owner->email,
+        'status' => 'inactive',
+        'branch_ids' => $owner->branches()->pluck('branches.id')->all(),
+    ])->assertForbidden();
+
+    $this->actingAs($owner)->put("/staff/{$owner->id}", [
         'name' => $owner->name,
         'email' => $owner->email,
         'status' => 'inactive',

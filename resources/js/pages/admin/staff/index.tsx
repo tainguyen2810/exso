@@ -177,7 +177,7 @@ export default function StaffIndex({
                     filters={filters}
                     bulkActions={bulkActions}
                     canSelect={(member) => !member.is_owner}
-                    exportable
+                    exportable={can('staff.export')}
                     empty="Không có nhân viên nào."
                     actions={
                         can('staff.create') && (
