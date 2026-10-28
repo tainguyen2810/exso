@@ -85,6 +85,7 @@ const columns: Column<Row>[] = [
     {
         key: 'type',
         header: 'Loại hình',
+        hidden: true,
         cell: (product) => typeLabels[product.type],
     },
     {

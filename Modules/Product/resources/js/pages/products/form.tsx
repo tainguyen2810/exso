@@ -1016,7 +1016,7 @@ export default function ProductForm({
                         />
                         {form.data.options.length > 0 && (
                             <div className="overflow-x-auto">
-                                <Table>
+                                <Table className="[&_td_input]:min-w-28">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Phiên bản</TableHead>
@@ -1224,7 +1224,7 @@ export default function ProductForm({
                         disabled={!editable}
                     >
                         <div className="overflow-x-auto">
-                            <Table>
+                            <Table className="[&_td_input]:min-w-28">
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Đơn vị</TableHead>
