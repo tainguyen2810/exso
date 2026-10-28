@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { ChevronDown, Plus, Trash2, X } from 'lucide-react';
+import { ChevronDown, Gift, Plus, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CustomerPicker } from '@/components/app/customer-picker';
 import type { CustomerOption } from '@/components/app/customer-picker';
@@ -38,6 +38,16 @@ import type {
     SearchHandle,
 } from '../../components/order-product-search';
 import type { PaymentMethodOption } from '../../components/payment-dialog';
+import {
+    AppliedPromotions,
+    CouponField,
+    PromotionDialog,
+    usePromotionPreview,
+} from '../../components/promotions';
+import type {
+    PromotionChoice,
+    PromotionRequest,
+} from '../../components/promotions';
 import { lineTotal, orderTotals } from '../../components/totals';
 
 type Option = { id: number; name: string };
@@ -82,6 +92,15 @@ type Draft = {
     reference: string | null;
     expected_delivery_at: string | null;
     items: Omit<Line, 'key'>[];
+    promotion_ids?: number[];
+    coupon_code?: string | null;
+    gifts?: Record<string, number>;
+};
+
+export type PromotionSettings = {
+    enabled: boolean;
+    multiple: boolean;
+    coupons: boolean;
 };
 
 type Payment = { payment_method_id: number | null; amount: number };
@@ -112,6 +131,7 @@ export default function OrderForm({
     pricePolicies,
     canEditPrice,
     defaultOnlineMethod,
+    promotionSettings,
 }: {
     order: Draft | null;
     presetCustomer?: CustomerOption | null;
@@ -123,6 +143,7 @@ export default function OrderForm({
     pricePolicies: SelectOption[];
     canEditPrice: boolean;
     defaultOnlineMethod: number | string | null;
+    promotionSettings: PromotionSettings;
 }) {
     const can = useCan();
     const editing = order?.id != null;
@@ -133,6 +154,7 @@ export default function OrderForm({
     const [discountOpen, setDiscountOpen] = useState(false);
     const [serviceOpen, setServiceOpen] = useState(false);
     const [paying, setPaying] = useState(false);
+    const [promotionOpen, setPromotionOpen] = useState(false);
     const [paymentTouched, setPaymentTouched] = useState(false);
     const customer0 = order?.customer ?? presetCustomer;
     const defaultMethod =
@@ -188,19 +210,56 @@ export default function OrderForm({
             },
         ] as Payment[],
         next_step: null as string | null,
+        promotion_ids: order?.promotion_ids ?? ([] as number[]),
+        coupon_code: order?.coupon_code ?? '',
+        gifts: (order?.gifts ?? {}) as Record<string, number>,
     });
     const errors = form.errors as Record<string, string | undefined>;
     const data = form.data;
 
-    const totals = useMemo(
-        () =>
-            orderTotals(
-                data.items,
-                data.discount,
-                data.discount_bp,
-                data.shipping_fee,
-            ),
-        [data.items, data.discount, data.discount_bp, data.shipping_fee],
+    // Promotions are priced by the server (same call as POS), then shown here.
+    const promotionRequest: PromotionRequest = useMemo(
+        () => ({
+            order_id: order?.id ?? null,
+            branch_id: data.branch_id,
+            customer_id: data.customer?.id ?? null,
+            source_id: data.source_id,
+            price_policy: data.price_policy,
+            items: data.items.map((line) => ({
+                variant_id: line.variant_id,
+                name: line.name,
+                quantity: line.quantity,
+                price: line.price,
+                discount: line.discount,
+            })),
+        }),
+        [
+            order?.id,
+            data.branch_id,
+            data.customer,
+            data.source_id,
+            data.price_policy,
+            data.items,
+        ],
+    );
+    const promotionChoice: PromotionChoice = {
+        promotion_ids: data.promotion_ids,
+        coupon_code: data.coupon_code,
+        gifts: data.gifts,
+    };
+    const promo = usePromotionPreview(promotionRequest, promotionChoice);
+    const pricedItems = data.items.map((line, index) => ({
+        ...line,
+        discount: line.discount + promo.lineDiscount(index),
+    }));
+    const couponAmount =
+        promo.applied.find((item) => item.coupon_id !== null)?.amount ?? 0;
+    const totals = orderTotals(
+        pricedItems,
+        data.discount,
+        data.discount_bp,
+        data.shipping_fee,
+        promo.orderDiscount,
     );
     const alreadyPaid = order?.paid ?? 0;
     const remaining = Math.max(0, totals.total - alreadyPaid);
@@ -399,6 +458,9 @@ export default function OrderForm({
                       )
                     : [],
             next_step: then,
+            promotion_ids: values.promotion_ids,
+            coupon_code: values.coupon_code || null,
+            gifts: values.gifts,
         }));
 
         if (editing && order?.id) {
@@ -869,10 +931,23 @@ export default function OrderForm({
                                                             )
                                                         }
                                                     />
+                                                    {promo.lineDiscount(index) >
+                                                        0 && (
+                                                        <div className="mt-1 text-right text-xs text-success">
+                                                            KM −
+                                                            {formatNumber(
+                                                                promo.lineDiscount(
+                                                                    index,
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="py-3 text-right font-medium tabular-nums">
                                                     {formatNumber(
-                                                        lineTotal(line),
+                                                        lineTotal(
+                                                            pricedItems[index],
+                                                        ),
                                                     )}
                                                 </td>
                                                 <td className="py-2 text-right">
@@ -898,6 +973,35 @@ export default function OrderForm({
                                             </tr>
                                         );
                                     })}
+                                    {promo.gifts.map((gift) => (
+                                        <tr
+                                            key={`gift-${gift.promotion_id}-${gift.variant_id}`}
+                                            className="border-b bg-success/5 last:border-0"
+                                        >
+                                            <td className="py-3 text-muted-foreground">
+                                                <Gift className="size-4 text-success" />
+                                            </td>
+                                            <td className="py-3">
+                                                <div className="font-medium">
+                                                    {gift.name}
+                                                </div>
+                                                <div className="text-xs text-success">
+                                                    Quà tặng · {gift.sku}
+                                                </div>
+                                            </td>
+                                            <td className="py-3 text-right tabular-nums">
+                                                {formatNumber(gift.quantity)}
+                                            </td>
+                                            <td className="py-3 text-right tabular-nums">
+                                                0
+                                            </td>
+                                            <td />
+                                            <td className="py-3 text-right font-medium tabular-nums">
+                                                0
+                                            </td>
+                                            <td />
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                             {lineErrors.length > 0 && (
@@ -908,6 +1012,31 @@ export default function OrderForm({
                         </div>
                     )}
                     <div className="grid gap-2 border-t px-5 py-4 text-sm sm:ml-auto sm:w-96">
+                        {promotionSettings.enabled && (
+                            <div className="grid gap-1">
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center gap-1.5 self-start text-primary hover:underline"
+                                    onClick={() => setPromotionOpen(true)}
+                                >
+                                    <Gift className="size-4" /> Áp dụng chương
+                                    trình khuyến mại
+                                </button>
+                                <AppliedPromotions
+                                    applied={promo.applied}
+                                    errors={{
+                                        ...promo.errors,
+                                        ...(errors.promotion_ids
+                                            ? {
+                                                  promotion_ids:
+                                                      errors.promotion_ids,
+                                              }
+                                            : {}),
+                                    }}
+                                    loading={promo.loading}
+                                />
+                            </div>
+                        )}
                         <SumLine
                             label={`Tổng tiền hàng (${formatNumber(totals.quantity)} sản phẩm)`}
                             value={totals.subtotal}
@@ -926,8 +1055,22 @@ export default function OrderForm({
                                         : ''}
                                 </button>
                             }
-                            value={totals.discount}
+                            // Typed discount + programs; the coupon has its own line.
+                            value={totals.discount - couponAmount}
                         />
+                        {promotionSettings.coupons && (
+                            <CouponField
+                                value={data.coupon_code}
+                                onChange={(code) =>
+                                    form.setData('coupon_code', code)
+                                }
+                                error={
+                                    promo.errors.coupon_code ??
+                                    errors.coupon_code
+                                }
+                                amount={couponAmount}
+                            />
+                        )}
                         {data.delivery_method !== 'pickup' && (
                             <div className="flex items-center justify-between gap-3">
                                 <span>Phí giao hàng (F7)</span>
@@ -1258,6 +1401,20 @@ export default function OrderForm({
                         ...previous,
                         discount,
                         discount_bp: discountBp,
+                    }))
+                }
+            />
+            <PromotionDialog
+                open={promotionOpen}
+                onOpenChange={setPromotionOpen}
+                request={promotionRequest}
+                choice={promotionChoice}
+                multiple={promotionSettings.multiple}
+                onApply={(choice) =>
+                    form.setData((previous) => ({
+                        ...previous,
+                        promotion_ids: choice.promotion_ids,
+                        gifts: choice.gifts,
                     }))
                 }
             />

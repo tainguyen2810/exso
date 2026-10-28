@@ -82,6 +82,13 @@ class Permissions
                 'actions' => ['view', 'create', 'update', 'delete', 'approve', 'cancel', 'export'],
             ],
             'reports' => ['label' => 'Báo cáo', 'group' => 'Báo cáo', 'actions' => ['view', 'export']],
+            'promotions' => ['label' => 'Chương trình khuyến mại', 'group' => 'Khuyến mại', 'actions' => ['view', 'create', 'update', 'delete']],
+            'coupons' => ['label' => 'Mã giảm giá', 'group' => 'Khuyến mại', 'actions' => ['view', 'create', 'update', 'delete']],
+            'loyalty' => [
+                'label' => 'Tích điểm, hạng thành viên', 'group' => 'Khuyến mại',
+                'actions' => ['view', 'update'],
+                'labels' => ['view' => 'Xem điểm khách hàng', 'update' => 'Cấu hình, điều chỉnh điểm'],
+            ],
             'settings' => [
                 'label' => 'Cấu hình cửa hàng', 'group' => 'Cấu hình',
                 'actions' => ['view', 'update'],

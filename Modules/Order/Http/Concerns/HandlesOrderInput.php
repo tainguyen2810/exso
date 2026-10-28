@@ -62,6 +62,11 @@ trait HandlesOrderInput
             'payments' => ['array', 'max:10'],
             'payments.*.payment_method_id' => ['required', 'integer'],
             'payments.*.amount' => ['required', ...$money],
+            'promotion_ids' => ['array', 'max:20'],
+            'promotion_ids.*' => ['integer'],
+            'coupon_code' => ['nullable', 'string', 'max:50'],
+            'gifts' => ['array', 'max:50'],
+            'gifts.*' => ['integer'],
         ], [], [
             'branch_id' => 'chi nhánh',
             'customer_id' => 'khách hàng',
@@ -107,6 +112,10 @@ trait HandlesOrderInput
                 'note' => $item['note'] ?? null,
             ], $data['items'])),
             'payments' => $payments,
+            'promotion_ids' => array_values(array_map('intval', $data['promotion_ids'] ?? [])),
+            'coupon_code' => $data['coupon_code'] ?? null,
+            // "<promotion id>-<row>" => gift variant chosen.
+            'gifts' => $this->giftChoices($data['gifts'] ?? []),
         ];
     }
 
@@ -128,6 +137,12 @@ trait HandlesOrderInput
             'canEditPrice' => app(OrderService::class)->canEditPrice($user),
             'defaultOnlineMethod' => settings('payment.default_online'),
             'defaultPosMethod' => settings('payment.default_pos'),
+            // Khuyến mại (G5): one program per order, or several.
+            'promotionSettings' => [
+                'enabled' => (bool) settings('promotions.enabled'),
+                'multiple' => settings('promotions.apply_mode') === 'many',
+                'coupons' => (bool) settings('coupons.enabled'),
+            ],
         ];
     }
 
@@ -176,5 +191,24 @@ trait HandlesOrderInput
         $user = $request->user();
 
         abort_unless($order->isVisibleTo($user), 403, 'Bạn không xem được đơn hàng này.');
+    }
+
+    /**
+     * "<promotion id>-<row>" => gift variant chosen.
+     *
+     * @param  array<mixed>  $gifts
+     * @return array<string, int>
+     */
+    protected function giftChoices(array $gifts): array
+    {
+        $choices = [];
+
+        foreach ($gifts as $key => $variant) {
+            if (preg_match('/^\d+-\d+$/', (string) $key) === 1) {
+                $choices[(string) $key] = (int) $variant;
+            }
+        }
+
+        return $choices;
     }
 }

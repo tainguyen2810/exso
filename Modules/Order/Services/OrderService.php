@@ -16,6 +16,9 @@ use Modules\Customer\Services\CustomerLedger;
 use Modules\Inventory\Models\Inventory;
 use Modules\Inventory\Models\StockMovement;
 use Modules\Inventory\Services\InventoryService;
+use Modules\Order\Contracts\OrderPromotions;
+use Modules\Order\Contracts\PromotionContext;
+use Modules\Order\Contracts\PromotionOutcome;
 use Modules\Order\Events\OrderPaymentRecorded;
 use Modules\Order\Events\OrderStatusChanged;
 use Modules\Order\Models\Order;
@@ -37,11 +40,15 @@ use Modules\Product\Models\ProductVariant;
  *    money received is refunded
  *  - returns: see ReturnService
  *
+ * Promotions (G5) come from OrderPromotions: line discounts, gift lines
+ * and an order discount, recomputed here on every save.
+ *
  * @phpstan-import-type Policy from PriceResolver
  *
  * @phpstan-type LineInput array{variant_id: int|null, name?: string|null, quantity: int, price?: int|null, discount?: int, note?: string|null}
  * @phpstan-type PaymentInput array{payment_method_id: int, amount: int}
- * @phpstan-type OrderInput array{branch_id: int, customer_id?: int|null, source_id?: int|null, assigned_to?: int|null, price_policy?: string|null, delivery_method?: string, carrier_name?: string|null, tracking_code?: string|null, receiver_name?: string|null, receiver_phone?: string|null, shipping_address?: string|null, shipping_fee?: int, discount?: int, discount_bp?: int|null, note?: string|null, tags?: string|null, reference?: string|null, expected_delivery_at?: string|null, sale_at?: string|null, items: list<LineInput>, payments?: list<PaymentInput>, channel?: string, pos_shift_id?: int|null}
+ * @phpstan-type OrderInput array{branch_id: int, customer_id?: int|null, source_id?: int|null, assigned_to?: int|null, price_policy?: string|null, delivery_method?: string, carrier_name?: string|null, tracking_code?: string|null, receiver_name?: string|null, receiver_phone?: string|null, shipping_address?: string|null, shipping_fee?: int, discount?: int, discount_bp?: int|null, note?: string|null, tags?: string|null, reference?: string|null, expected_delivery_at?: string|null, sale_at?: string|null, items: list<LineInput>, payments?: list<PaymentInput>, channel?: string, pos_shift_id?: int|null, promotion_ids?: list<int>, coupon_code?: string|null, gifts?: array<string, int>}
+ * @phpstan-type Line array{variant_id: int|null, product_id: int|null, product_type: string, name: string, sku: string|null, unit: string|null, quantity: int, price: int, discount: int, total: int, note: string|null, promotion_id?: int|null, promotion_discount?: int, is_gift?: bool}
  */
 class OrderService
 {
@@ -49,6 +56,7 @@ class OrderService
         protected InventoryService $inventory,
         protected CustomerLedger $ledger,
         protected PriceResolver $prices,
+        protected OrderPromotions $promotions,
     ) {}
 
     /**
@@ -63,13 +71,14 @@ class OrderService
         $customer = $this->customer($data['customer_id'] ?? null);
         $policy = $this->policy($data, $customer);
         $lines = $this->lines($data['items'], $policy, $user);
-        $totals = $this->totals($lines, (int) ($data['discount'] ?? 0), $data['discount_bp'] ?? null, (int) ($data['shipping_fee'] ?? 0));
+        [$lines, $outcome] = $this->promote($data, $lines, $customer, true);
+        $totals = $this->totals($lines, (int) ($data['discount'] ?? 0), $data['discount_bp'] ?? null, (int) ($data['shipping_fee'] ?? 0), $outcome->orderDiscount);
 
         if (! settings('sales.allow_negative_order')) {
             $this->checkAvailable($lines, (int) $data['branch_id']);
         }
 
-        $order = DB::transaction(function () use ($data, $user, $customer, $policy, $lines, $totals, $then): Order {
+        $order = DB::transaction(function () use ($data, $user, $customer, $policy, $lines, $totals, $outcome, $then): Order {
             $order = new Order([
                 ...$this->header($data, $customer, $policy, $user),
                 'code' => Sequence::next('SON', Order::class),
@@ -77,8 +86,9 @@ class OrderService
                 'created_by' => $user->id,
                 'pos_shift_id' => $data['pos_shift_id'] ?? null,
             ]);
-            $order->forceFill([...$totals, 'status' => Order::PENDING])->save();
+            $order->forceFill([...$totals, 'promotions' => $this->chosen($data, $outcome), 'status' => Order::PENDING])->save();
             $this->saveLines($order, $lines);
+            $this->promotions->record($order, $outcome);
             $this->history($order, 'created', $order->channel === 'pos' ? 'Bán tại quầy' : null);
 
             // Money given beyond the total is change handed back, not recorded.
@@ -120,9 +130,10 @@ class OrderService
         $customer = $this->customer($data['customer_id'] ?? null);
         $policy = $this->policy($data, $customer);
         $lines = $this->lines($data['items'], $policy, $user, $order);
-        $totals = $this->totals($lines, (int) ($data['discount'] ?? 0), $data['discount_bp'] ?? null, (int) ($data['shipping_fee'] ?? 0));
+        [$lines, $outcome] = $this->promote($data, $lines, $customer, true, $order);
+        $totals = $this->totals($lines, (int) ($data['discount'] ?? 0), $data['discount_bp'] ?? null, (int) ($data['shipping_fee'] ?? 0), $outcome->orderDiscount);
 
-        DB::transaction(function () use ($order, $data, $user, $customer, $policy, $lines, $totals): void {
+        DB::transaction(function () use ($order, $data, $user, $customer, $policy, $lines, $totals, $outcome): void {
             $locked = $this->lock($order);
 
             if (! $locked->isEditable()) {
@@ -144,8 +155,11 @@ class OrderService
             $before = $locked->customer_id;
             $header = $this->header($data, $customer, $policy, $user, $locked);
             unset($header['sale_at']);
-            $locked->fill($header)->forceFill($totals)->save();
+            $locked->fill($header)->forceFill([...$totals, 'promotions' => $this->chosen($data, $outcome)])->save();
             $this->saveLines($locked, $lines);
+            // Usage is counted again for what the order has now.
+            $this->promotions->release($locked);
+            $this->promotions->record($locked, $outcome);
 
             if ($locked->holdsStock()) {
                 if (! settings('sales.approve_negative_order')) {
@@ -326,6 +340,7 @@ class OrderService
             }
 
             $this->refundAll($locked);
+            $this->promotions->release($locked);
 
             $locked->forceFill([
                 'status' => Order::CANCELLED,
@@ -440,11 +455,13 @@ class OrderService
     /**
      * Totals of the lines: subtotal, order discount (amount, or a
      * percentage of the subtotal), shipping fee and what the customer pays.
+     * The promotions' order discount comes first; the typed discount is
+     * added on top, never beyond the subtotal. `discount` is the sum.
      *
      * @param  list<array{total: int}>  $lines
-     * @return array{subtotal: int, discount: int, discount_bp: int|null, shipping_fee: int, total: int}
+     * @return array{subtotal: int, discount: int, discount_bp: int|null, promotion_discount: int, shipping_fee: int, total: int}
      */
-    public function totals(array $lines, int $discount, ?int $discountBp, int $shippingFee): array
+    public function totals(array $lines, int $discount, ?int $discountBp, int $shippingFee, int $promotionDiscount = 0): array
     {
         $subtotal = array_sum(array_column($lines, 'total'));
         $discountBp = $discountBp === null ? null : min(10000, max(0, $discountBp));
@@ -453,15 +470,157 @@ class OrderService
             $discount = intdiv($subtotal * $discountBp + 5000, 10000);
         }
 
-        $discount = min(max(0, $discount), $subtotal);
+        $promotionDiscount = min(max(0, $promotionDiscount), $subtotal);
+        $discount = min(max(0, $discount), $subtotal - $promotionDiscount) + $promotionDiscount;
         $shippingFee = max(0, $shippingFee);
 
         return [
             'subtotal' => $subtotal,
             'discount' => $discount,
             'discount_bp' => $discountBp,
+            'promotion_discount' => $promotionDiscount,
             'shipping_fee' => $shippingFee,
             'total' => $subtotal - $discount + $shippingFee,
+        ];
+    }
+
+    /**
+     * What "Áp dụng chương trình khuyến mại" shows, for the order form and
+     * POS alike: the programs the order qualifies for and the order priced
+     * with the chosen ones, computed exactly as saving would.
+     *
+     * @param  OrderInput  $data
+     * @return array<string, mixed>
+     */
+    public function preview(array $data, User $user, ?Order $order = null): array
+    {
+        $customer = $this->customer($data['customer_id'] ?? null);
+        $policy = $this->policy($data, $customer);
+        $lines = $data['items'] === [] ? [] : $this->lines($data['items'], $policy, $user, $order);
+        [$priced, $outcome] = $this->promote($data, $lines, $customer, false, $order);
+        $totals = $this->totals($priced, (int) ($data['discount'] ?? 0), $data['discount_bp'] ?? null, (int) ($data['shipping_fee'] ?? 0), $outcome->orderDiscount);
+        $count = count($lines);
+
+        return [
+            'available' => $outcome->available,
+            'applied' => $outcome->applied,
+            'errors' => $outcome->errors,
+            'lines' => array_map(fn (array $line): array => [
+                'price' => $line['price'],
+                'promotion_id' => $line['promotion_id'] ?? null,
+                'promotion_discount' => $line['promotion_discount'] ?? 0,
+            ], array_slice($priced, 0, $count)),
+            'gifts' => array_map(fn (array $line): array => [
+                'variant_id' => $line['variant_id'],
+                'promotion_id' => $line['promotion_id'] ?? null,
+                'name' => $line['name'],
+                'sku' => $line['sku'],
+                'unit' => $line['unit'],
+                'quantity' => $line['quantity'],
+            ], array_slice($priced, $count)),
+            'promotion_discount' => $totals['promotion_discount'],
+            'totals' => $totals,
+        ];
+    }
+
+    /**
+     * Run the promotions on priced lines: line discounts are added to the
+     * typed ones, gift lines (price 0) are appended.
+     *
+     * @param  OrderInput  $data
+     * @param  list<Line>  $lines
+     * @return array{0: list<Line>, 1: PromotionOutcome}
+     */
+    protected function promote(array $data, array $lines, ?Customer $customer, bool $strict, ?Order $order = null): array
+    {
+        $kept = $order->promotions ?? [];
+        $outcome = $this->promotions->apply(new PromotionContext(
+            lines: array_map(fn (array $line): array => [
+                'variant_id' => $line['variant_id'],
+                'product_id' => $line['product_id'],
+                'product_type' => $line['product_type'],
+                'name' => $line['name'],
+                'quantity' => $line['quantity'],
+                'price' => $line['price'],
+                'discount' => $line['discount'],
+                'total' => $line['total'],
+            ], $lines),
+            customer: $customer,
+            branchId: (int) $data['branch_id'],
+            sourceId: $data['source_id'] ?? null,
+            promotionIds: array_values(array_unique(array_map('intval', $data['promotion_ids'] ?? []))),
+            couponCode: isset($data['coupon_code']) && trim($data['coupon_code']) !== '' ? trim($data['coupon_code']) : null,
+            gifts: $data['gifts'] ?? [],
+            keepIds: $kept['ids'] ?? [],
+            keepCoupon: $kept['coupon'] ?? null,
+        ), $strict);
+
+        foreach ($lines as $index => $line) {
+            $amount = min(max(0, $outcome->lineDiscounts[$index]['amount'] ?? 0), $line['total']);
+            $lines[$index] = [
+                ...$line,
+                'discount' => $line['discount'] + $amount,
+                'total' => $line['total'] - $amount,
+                'promotion_id' => $amount > 0 ? $outcome->lineDiscounts[$index]['promotion_id'] : null,
+                'promotion_discount' => $amount,
+                'is_gift' => false,
+            ];
+        }
+
+        $variants = ProductVariant::query()->with('product')->whereIn('id', array_column($outcome->gifts, 'variant_id'))->get()->keyBy('id');
+
+        foreach ($outcome->gifts as $gift) {
+            /** @var ProductVariant|null $variant */
+            $variant = $variants->get($gift['variant_id']);
+
+            if ($variant === null || $gift['quantity'] <= 0) {
+                continue;
+            }
+
+            $lines[] = [
+                'variant_id' => $variant->id,
+                'product_id' => $variant->product_id,
+                'product_type' => $variant->product->type,
+                'name' => $variant->name,
+                'sku' => $variant->sku,
+                'unit' => $variant->unit,
+                'quantity' => $gift['quantity'],
+                'price' => 0,
+                'discount' => 0,
+                'total' => 0,
+                'note' => 'Quà tặng',
+                'promotion_id' => $gift['promotion_id'],
+                'promotion_discount' => 0,
+                'is_gift' => true,
+            ];
+        }
+
+        return [$lines, $outcome];
+    }
+
+    /**
+     * What the order keeps of its promotions, to edit it later and show them.
+     *
+     * @param  OrderInput  $data
+     * @return array<string, mixed>|null
+     */
+    protected function chosen(array $data, PromotionOutcome $outcome): ?array
+    {
+        if ($outcome->applied === []) {
+            return null;
+        }
+
+        $coupon = null;
+
+        foreach ($outcome->applied as $applied) {
+            $coupon = $applied['coupon_id'] !== null ? $applied['code'] : $coupon;
+        }
+
+        return [
+            'ids' => array_values(array_filter(array_column($outcome->applied, 'promotion_id'))),
+            'coupon' => $coupon,
+            'gifts' => $data['gifts'] ?? [],
+            'applied' => $outcome->applied,
         ];
     }
 
@@ -472,7 +631,7 @@ class OrderService
      *
      * @param  list<LineInput>  $items
      * @param  Policy  $policy
-     * @return list<array{variant_id: int|null, product_id: int|null, product_type: string, name: string, sku: string|null, unit: string|null, quantity: int, price: int, discount: int, total: int, note: string|null}>
+     * @return list<Line>
      */
     public function lines(array $items, array $policy, User $user, ?Order $order = null): array
     {
@@ -767,6 +926,9 @@ class OrderService
 
     protected function recordPayment(Order $order, PaymentMethod $method, int $amount, string $kind, ?string $note = null, ?Model $reference = null): OrderPayment
     {
+        // E.g. paying with loyalty points takes the points first.
+        $this->promotions->beforePayment($order, $method, $amount);
+
         /** @var OrderPayment $payment */
         $payment = OrderPayment::query()->create([
             'order_id' => $order->id,

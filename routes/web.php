@@ -52,7 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Hub of store settings; open to anyone who can see one of its pages.
     Route::get('config', function (Request $request) {
-        abort_unless($request->user()?->canAny(['settings.view', 'branches.view', 'staff.view', 'roles.view', 'activity_log.view', 'products.update']), 403);
+        abort_unless($request->user()?->canAny(['settings.view', 'branches.view', 'staff.view', 'roles.view', 'activity_log.view', 'products.update', 'promotions.view', 'loyalty.view']), 403);
 
         return Inertia::render('config/index');
     })->name('config.index');

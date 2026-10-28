@@ -53,6 +53,8 @@ use Modules\Customer\Models\Customer;
  * @property int $paid
  * @property int $returned_total
  * @property int $cost_total
+ * @property int $promotion_discount
+ * @property array{ids?: list<int>, coupon?: string|null, gifts?: array<string, int>, applied?: list<array{promotion_id: int|null, coupon_id: int|null, name: string, code: string|null, amount: int}>}|null $promotions
  * @property string|null $reference
  * @property string|null $tags
  * @property string|null $note
@@ -149,6 +151,8 @@ class Order extends Model
             'paid' => 'integer',
             'returned_total' => 'integer',
             'cost_total' => 'integer',
+            'promotion_discount' => 'integer',
+            'promotions' => 'array',
             'expected_delivery_at' => 'immutable_date',
             'sale_at' => 'immutable_datetime',
             'approved_at' => 'immutable_datetime',

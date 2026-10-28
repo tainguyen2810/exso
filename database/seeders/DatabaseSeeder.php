@@ -13,6 +13,7 @@ use Illuminate\Database\Seeder;
 use Modules\Customer\Database\Seeders\CustomerDemoSeeder;
 use Modules\Order\Database\Seeders\OrderDemoSeeder;
 use Modules\Product\Database\Seeders\ProductDemoSeeder;
+use Modules\Promotion\Database\Seeders\PromotionDemoSeeder;
 use Modules\Purchase\Database\Seeders\PurchaseDemoSeeder;
 use Modules\Report\Database\Seeders\ReportDemoSeeder;
 
@@ -80,6 +81,7 @@ class DatabaseSeeder extends Seeder
             $this->call(PurchaseDemoSeeder::class);
             $this->call(CustomerDemoSeeder::class);
             $this->call(OrderDemoSeeder::class);
+            $this->call(PromotionDemoSeeder::class);
             $this->call(ReportDemoSeeder::class);
         });
     }

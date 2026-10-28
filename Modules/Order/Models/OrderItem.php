@@ -26,6 +26,9 @@ use Modules\Product\Models\ProductVariant;
  * @property int $cost
  * @property int $returned_quantity
  * @property string|null $note
+ * @property int|null $promotion_id
+ * @property int $promotion_discount
+ * @property bool $is_gift
  * @property-read ProductVariant|null $variant
  * @property-read Product|null $product
  */
@@ -50,6 +53,8 @@ class OrderItem extends Model
             'total' => 'integer',
             'cost' => 'integer',
             'returned_quantity' => 'integer',
+            'promotion_discount' => 'integer',
+            'is_gift' => 'boolean',
         ];
     }
 

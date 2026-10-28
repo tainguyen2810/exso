@@ -165,6 +165,9 @@ export function RecordDialog({
                     className="grid gap-4"
                     onSubmit={(event) => {
                         event.preventDefault();
+                        // React events cross the portal: keep an outer form
+                        // (e.g. DocumentForm) from submitting too.
+                        event.stopPropagation();
                         onSubmit();
                     }}
                 >

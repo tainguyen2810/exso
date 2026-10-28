@@ -234,6 +234,8 @@ class CustomerController extends Controller
                 ]),
             // The orders module fills the purchase history.
             'orders' => Hook::filter('customer.orders', [], $customer, $request->user()),
+            // Extra cards of other modules (e.g. loyalty points): {title, href?, lines: [{label, value}]}.
+            'panels' => Hook::filter('customer.panels', [], $customer, $request->user()),
         ]);
     }
 

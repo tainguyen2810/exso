@@ -6,6 +6,8 @@ use App\Support\Hooks\Hook;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Customer\Models\CustomerDebt;
+use Modules\Order\Contracts\NoPromotions;
+use Modules\Order\Contracts\OrderPromotions;
 use Modules\Order\Dashboard\SalesSummary;
 use Modules\Order\Http\Controllers\OrderController;
 use Modules\Order\Models\Order;
@@ -20,6 +22,8 @@ class OrderServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // The Promotion module binds the real engine; without it nothing applies.
+        $this->app->singletonIf(OrderPromotions::class, NoPromotions::class);
         $this->app->singleton(PriceResolver::class);
         $this->app->singleton(OrderService::class);
         $this->app->singleton(ReturnService::class);

@@ -38,6 +38,8 @@ export type CustomerOption = {
     price_label: string;
     discount_bp: number;
     payment_method_id: number | null;
+    /** Points, when the store has loyalty on (Promotion module). */
+    loyalty?: { points: number; value: number; tier: string | null } | null;
 };
 
 /**
@@ -193,6 +195,19 @@ export function CustomerPicker({
                             {formatNumber(value.total_spent)}
                         </span>
                     </span>
+                    {value.loyalty && (
+                        <span>
+                            <span className="text-muted-foreground">
+                                Điểm tích lũy
+                                {value.loyalty.tier
+                                    ? ` · ${value.loyalty.tier}`
+                                    : ''}
+                            </span>
+                            <span className="block font-medium tabular-nums">
+                                {formatNumber(value.loyalty.points)}
+                            </span>
+                        </span>
+                    )}
                     {!compact && (
                         <>
                             <span>
