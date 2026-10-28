@@ -32,7 +32,10 @@ export function AppSidebarHeader({
         <header className="sticky top-0 z-20 flex h-[52px] shrink-0 items-center gap-3 bg-card px-4 shadow-[0_2px_4px_rgba(168,168,168,0.25)] md:px-8">
             <SidebarTrigger className="-ml-2 md:hidden" />
             <div className="flex min-w-0 flex-1 items-center">
-                <div ref={slots?.setTitle} className="peer min-w-0" />
+                <div
+                    ref={slots?.setTitle}
+                    className="peer min-w-0 overflow-hidden"
+                />
                 <h1 className="hidden truncate text-xl font-medium text-foreground peer-empty:block">
                     {title}
                 </h1>

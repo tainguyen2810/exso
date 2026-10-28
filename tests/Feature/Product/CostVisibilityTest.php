@@ -12,7 +12,7 @@ use Spatie\Permission\Models\Role;
 function staffWithoutCost(?Branch $branch = null): User
 {
     Role::findOrCreate('Kho không xem giá vốn', 'web')
-        ->syncPermissions(['products.view', 'products.create', 'products.update', 'inventory.view']);
+        ->syncPermissions(['products.view', 'products.create', 'products.update', 'products.import', 'inventory.view']);
 
     return staffWithRole('Kho không xem giá vốn', $branch);
 }

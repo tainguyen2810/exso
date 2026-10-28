@@ -26,6 +26,8 @@ export function DocumentForm({
     processing = false,
     isDirty = true,
     submitLabel = 'Lưu',
+    submitVariant = 'default',
+    extraActions,
     aside,
     actions,
     readOnly,
@@ -39,6 +41,9 @@ export function DocumentForm({
     processing?: boolean;
     isDirty?: boolean;
     submitLabel?: string;
+    submitVariant?: 'default' | 'outline';
+    /** More buttons after Lưu, e.g. "Nhập kho" next to "Lưu nháp". */
+    extraActions?: ReactNode;
     aside?: ReactNode;
     /** Extra buttons, e.g. delete; shown at the bottom left like Sapo. */
     actions?: ReactNode;
@@ -81,6 +86,7 @@ export function DocumentForm({
     const saveButton = (
         <Button
             form={id}
+            variant={submitVariant}
             disabled={processing || !isDirty}
             title="Lưu (F1 hoặc Ctrl+S)"
         >
@@ -93,10 +99,10 @@ export function DocumentForm({
             <PageTitle>
                 <Link
                     href={backHref}
-                    className="inline-flex items-center gap-1 truncate text-sm text-muted-foreground hover:text-primary"
+                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
                 >
-                    <ChevronLeft className="size-4" />
-                    {backLabel}
+                    <ChevronLeft className="size-4 shrink-0" />
+                    <span className="truncate">{backLabel}</span>
                 </Link>
             </PageTitle>
             <TopbarActions>
@@ -104,6 +110,7 @@ export function DocumentForm({
                     <Link href={backHref}>Hủy</Link>
                 </Button>
                 {!readOnly && saveButton}
+                {!readOnly && extraActions}
             </TopbarActions>
             <div className="mx-auto w-full max-w-[1200px] flex-1 space-y-4 px-4 pt-5 pb-10 md:px-8">
                 <h2 className="text-xl font-medium">{title}</h2>
@@ -136,6 +143,7 @@ export function DocumentForm({
                                 F1 hoặc Ctrl+S để lưu
                             </span>
                             {saveButton}
+                            {extraActions}
                         </>
                     )}
                 </div>

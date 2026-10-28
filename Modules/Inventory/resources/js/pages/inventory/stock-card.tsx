@@ -1,10 +1,17 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Package } from 'lucide-react';
+import { useState } from 'react';
+import { MoneyInput } from '@/components/app/money-input';
 import { TopbarActions } from '@/components/app/topbar';
 import { DataTable } from '@/components/data-table';
 import type { Column, FilterOption, TableData } from '@/components/data-table';
 import { Pill } from '@/components/app/status-badge';
 import { Button } from '@/components/ui/button';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
@@ -51,7 +58,82 @@ type Stock = {
     on_hand: number;
     reserved: number;
     available: number;
+    min_quantity: number | null;
+    max_quantity: number | null;
 };
+
+/** Min / max stock of one branch, edited in a small popover. */
+function Levels({
+    variantId,
+    row,
+    editable,
+}: {
+    variantId: number;
+    row: Stock;
+    editable: boolean;
+}) {
+    const [open, setOpen] = useState(false);
+    const [min, setMin] = useState<number | null>(row.min_quantity);
+    const [max, setMax] = useState<number | null>(row.max_quantity);
+    const [error, setError] = useState<string | null>(null);
+    const text =
+        row.min_quantity === null && row.max_quantity === null
+            ? 'Chưa đặt'
+            : `${row.min_quantity === null ? '—' : formatNumber(row.min_quantity)} – ${row.max_quantity === null ? '—' : formatNumber(row.max_quantity)}`;
+
+    if (!editable) {
+        return <span className="text-muted-foreground">{text}</span>;
+    }
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    className="text-primary hover:underline"
+                    title="Đặt tồn tối thiểu / tối đa"
+                >
+                    {text}
+                </button>
+            </PopoverTrigger>
+            <PopoverContent className="grid w-64 gap-3" align="end">
+                <div className="text-sm font-medium">
+                    Định mức tồn ở {row.branch}
+                </div>
+                <label className="grid gap-1 text-sm">
+                    Tồn tối thiểu
+                    <MoneyInput value={min} onValueChange={setMin} />
+                </label>
+                <label className="grid gap-1 text-sm">
+                    Tồn tối đa
+                    <MoneyInput value={max} onValueChange={setMax} />
+                </label>
+                {error && <p className="text-sm text-destructive">{error}</p>}
+                <Button
+                    size="sm"
+                    onClick={() =>
+                        router.put(
+                            `/inventory/variants/${variantId}/levels`,
+                            {
+                                branch_id: row.branch_id,
+                                min_quantity: min,
+                                max_quantity: max,
+                            },
+                            {
+                                preserveScroll: true,
+                                onSuccess: () => setOpen(false),
+                                onError: (errors) =>
+                                    setError(Object.values(errors)[0] ?? null),
+                            },
+                        )
+                    }
+                >
+                    Lưu
+                </Button>
+            </PopoverContent>
+        </Popover>
+    );
+}
 
 const columns: Column<Movement>[] = [
     {
@@ -173,6 +255,9 @@ export default function StockCard({
                                             <TableHead className="text-right">
                                                 Có thể bán
                                             </TableHead>
+                                            <TableHead className="text-right">
+                                                Định mức tồn
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -191,6 +276,18 @@ export default function StockCard({
                                                     {formatNumber(
                                                         row.available,
                                                     )}
+                                                </TableCell>
+                                                <TableCell className="text-right tabular-nums">
+                                                    <Levels
+                                                        variantId={variant.id}
+                                                        row={row}
+                                                        editable={
+                                                            can(
+                                                                'inventory.update',
+                                                            ) &&
+                                                            variant.tracks_inventory
+                                                        }
+                                                    />
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -258,7 +355,7 @@ export default function StockCard({
                             type: 'date-range',
                         },
                     ]}
-                    exportable
+                    exportable={can('inventory.export')}
                     empty="Chưa có biến động kho."
                 />
             </div>

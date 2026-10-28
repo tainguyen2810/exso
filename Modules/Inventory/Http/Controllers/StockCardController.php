@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\User;
 use App\Support\DataTable\DataTable;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Inventory\Models\Inventory;
@@ -39,6 +41,8 @@ class StockCardController extends Controller
             ->sortable(['created_at'], '-id');
 
         if ($request->query('export') === 'xlsx') {
+            abort_unless($user->can('inventory.export'), 403);
+
             return $table->export("the-kho-{$variant->sku}", array_filter([
                 'Thời gian' => fn (StockMovement $movement) => $movement->created_at?->setTimezone((string) config('app.timezone')),
                 'Chi nhánh' => fn (StockMovement $movement) => $movement->branch->name,
@@ -75,6 +79,8 @@ class StockCardController extends Controller
                     'on_hand' => $inventory->on_hand,
                     'reserved' => $inventory->reserved,
                     'available' => $inventory->available(),
+                    'min_quantity' => $inventory->min_quantity,
+                    'max_quantity' => $inventory->max_quantity,
                 ])
                 ->values(),
             'movements' => $table->paginate(fn (StockMovement $movement): array => [
@@ -94,5 +100,31 @@ class StockCardController extends Controller
             'branches' => Branch::query()->whereIn('id', $branchIds)->orderBy('name')->get(['id', 'name']),
             'types' => array_map(fn (string $value, string $label): array => ['value' => $value, 'label' => $label], array_keys(StockMovement::TYPES), StockMovement::TYPES),
         ]);
+    }
+
+    /**
+     * Minimum / maximum stock of the variant in one branch ("định mức tồn").
+     */
+    public function levels(Request $request, ProductVariant $variant): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $data = $request->validate([
+            'branch_id' => ['required', 'integer', Rule::in($user->branchIds())],
+            'min_quantity' => ['nullable', 'integer', 'min:0', 'max:100000000'],
+            'max_quantity' => ['nullable', 'integer', 'min:0', 'max:100000000', 'gte:min_quantity'],
+        ], [], ['min_quantity' => 'tồn tối thiểu', 'max_quantity' => 'tồn tối đa']);
+
+        abort_if($variant->base_variant_id !== null, 422);
+
+        Inventory::query()->updateOrCreate(
+            ['branch_id' => (int) $data['branch_id'], 'variant_id' => $variant->id],
+            ['min_quantity' => $data['min_quantity'] ?? null, 'max_quantity' => $data['max_quantity'] ?? null],
+        );
+
+        $this->toast('Đã lưu định mức tồn.');
+
+        return back();
     }
 }

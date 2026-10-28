@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\Inventory\Models\Inventory;
+use Modules\Inventory\Services\InventoryService;
 use Modules\Product\Models\Brand;
 use Modules\Product\Models\Category;
 use Modules\Product\Models\PriceList;
@@ -76,6 +77,8 @@ class ProductController extends Controller
             ->sortable(['name', 'on_hand', 'available', 'created_at']);
 
         if ($request->query('export') === 'xlsx') {
+            abort_unless($user->can('products.export'), 403);
+
             return ProductExcel::export($table->query(), $branchIds, $user->can('products.view_cost'));
         }
 
@@ -262,19 +265,29 @@ class ProductController extends Controller
      */
     public function searchVariants(Request $request): JsonResponse
     {
-        $term = mb_substr($request->string('q')->trim()->toString(), 0, 100);
+        /** @var User $user */
+        $user = $request->user();
+        $term = addcslashes(mb_substr($request->string('q')->trim()->toString(), 0, 100), '%_\\');
         $types = array_values(array_intersect((array) $request->query('types', []), array_keys(Product::TYPES)));
+        // Purchase and stock forms ask for the stock of the branch they work on.
+        $branchId = $request->integer('branch_id');
+        $branchId = in_array($branchId, $user->branchIds(), true) ? $branchId : null;
+        $showCost = $user->can('products.view_cost');
+        $baseOnly = $request->boolean('base_only');
 
         $variants = ProductVariant::query()
-            ->with('product:id,name,type')
+            ->with('product:id,name,type,image_url')
             ->whereHas('product', fn (Builder $query) => $types === [] ? $query : $query->whereIn('type', $types))
+            ->when($baseOnly, fn (Builder $query) => $query->whereNull('base_variant_id'))
             ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query
                 ->where('name', 'like', "%{$term}%")
                 ->orWhere('sku', 'like', "%{$term}%")
-                ->orWhere('barcode', $term)))
+                ->orWhere('barcode', $request->string('q')->trim()->toString())))
             ->orderBy('name')
             ->limit(20)
             ->get();
+
+        $inventory = app(InventoryService::class);
 
         return response()->json($variants->map(fn (ProductVariant $variant): array => [
             'id' => $variant->id,
@@ -283,8 +296,12 @@ class ProductController extends Controller
             'sku' => $variant->sku,
             'barcode' => $variant->barcode,
             'unit' => $variant->unit,
+            'image_url' => $variant->product->image_url,
             'retail_price' => $variant->retail_price,
+            'import_price' => $showCost ? $variant->import_price : null,
+            'cost_price' => $showCost ? $variant->cost_price : null,
             'type' => $variant->product->type,
+            'on_hand' => $branchId === null ? null : $inventory->stockOf($variant, [$branchId])['on_hand'],
         ]));
     }
 

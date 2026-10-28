@@ -6,11 +6,18 @@ import { cn } from '@/lib/utils';
 
 export type VariantOption = {
     id: number;
+    product_id?: number;
     name: string;
     sku: string;
     barcode: string | null;
     unit: string | null;
+    image_url?: string | null;
     retail_price: number;
+    /** Only when the user may see costs. */
+    import_price?: number | null;
+    cost_price?: number | null;
+    /** Stock in the branch passed as `branchId`. */
+    on_hand?: number | null;
     type: string;
 };
 
@@ -23,11 +30,20 @@ export function VariantPicker({
     types,
     placeholder = 'Tìm theo tên, mã SKU, mã vạch',
     hotkey = false,
+    branchId,
+    baseOnly = false,
+    price = 'retail_price',
 }: {
     onPick: (variant: VariantOption) => void;
     types?: string[];
     placeholder?: string;
     hotkey?: boolean;
+    /** Also return the stock of this branch. */
+    branchId?: number | null;
+    /** Leave out conversion units (stock and cost live on the base unit). */
+    baseOnly?: boolean;
+    /** Price shown in the results. */
+    price?: 'retail_price' | 'import_price' | 'cost_price';
 }) {
     const [term, setTerm] = useState('');
     const [results, setResults] = useState<VariantOption[]>([]);
@@ -61,6 +77,14 @@ export function VariantPicker({
                 .filter(Boolean)
                 .forEach((type) => params.append('types[]', type));
 
+            if (branchId) {
+                params.set('branch_id', String(branchId));
+            }
+
+            if (baseOnly) {
+                params.set('base_only', '1');
+            }
+
             fetch(`/products/variants/search?${params.toString()}`, {
                 headers: { Accept: 'application/json' },
                 signal: controller.signal,
@@ -77,7 +101,7 @@ export function VariantPicker({
             clearTimeout(timer);
             controller.abort();
         };
-    }, [term, typesKey]);
+    }, [term, typesKey, branchId, baseOnly]);
 
     const pick = (variant: VariantOption | undefined) => {
         if (!variant) {
@@ -145,8 +169,14 @@ export function VariantPicker({
                                         : ''}
                                 </span>
                             </span>
-                            <span className="shrink-0 tabular-nums">
-                                {formatNumber(variant.retail_price)}
+                            <span className="shrink-0 text-right tabular-nums">
+                                {variant[price] != null &&
+                                    formatNumber(variant[price] ?? 0)}
+                                {variant.on_hand != null && (
+                                    <span className="block text-xs text-muted-foreground">
+                                        Tồn: {formatNumber(variant.on_hand)}
+                                    </span>
+                                )}
                             </span>
                         </button>
                     ))}

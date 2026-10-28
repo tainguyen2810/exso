@@ -11,6 +11,7 @@ use App\Support\Settings\StoreDefaults;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
 use Modules\Product\Database\Seeders\ProductDemoSeeder;
+use Modules\Purchase\Database\Seeders\PurchaseDemoSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -73,6 +74,7 @@ class DatabaseSeeder extends Seeder
             $mixed->givePermissionTo('products.view_cost');
 
             $this->call(ProductDemoSeeder::class);
+            $this->call(PurchaseDemoSeeder::class);
         });
     }
 }

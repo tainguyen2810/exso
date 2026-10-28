@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useCan } from '@/hooks/use-can';
 import { formatDateTime, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { ProductThumb } from '../../components/product-thumb';
+import { ProductThumb } from '@/components/app/product-thumb';
 
 type Row = {
     id: number;
@@ -239,7 +239,7 @@ export default function ProductsIndex({
                         },
                     ]}
                     bulkActions={bulkActions}
-                    exportable
+                    exportable={can('products.export')}
                     actions={
                         <>
                             <Button variant="outline" asChild>
@@ -257,7 +257,7 @@ export default function ProductsIndex({
                         </>
                     }
                     toolbar={
-                        can('products.create') && (
+                        can('products.import') && (
                             <ImportDialog
                                 url="/products/import"
                                 templateUrl="/products/import/template"

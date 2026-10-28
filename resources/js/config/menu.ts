@@ -105,12 +105,12 @@ export const menu: NavGroup[] = [
                     {
                         title: 'Đặt hàng nhập',
                         href: '/purchase-orders',
-                        permission: 'inventory.view',
+                        permission: 'purchases.view',
                     },
                     {
                         title: 'Nhập hàng',
                         href: '/purchase-receipts',
-                        permission: 'inventory.view',
+                        permission: 'purchases.view',
                     },
                     {
                         title: 'Kiểm hàng',
@@ -125,12 +125,12 @@ export const menu: NavGroup[] = [
                     {
                         title: 'Nhà cung cấp',
                         href: '/suppliers',
-                        permission: 'inventory.view',
+                        permission: 'suppliers.view',
                     },
                     {
                         title: 'Điều chỉnh giá vốn',
                         href: '/cost-adjustments',
-                        permission: 'inventory.view',
+                        permission: 'products.view_cost',
                     },
                 ],
             },
