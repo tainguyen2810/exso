@@ -156,7 +156,9 @@ export default function CashVouchersIndex({
             <Head title={text.title} />
             <div className="px-4 pt-5 pb-10 md:px-8">
                 <DataTable
-                    tableKey={kind === 'receipt' ? 'cash-receipts' : 'cash-payments'}
+                    tableKey={
+                        kind === 'receipt' ? 'cash-receipts' : 'cash-payments'
+                    }
                     data={vouchers}
                     columns={columns}
                     searchPlaceholder={`Tìm kiếm theo mã ${text.name}, tham chiếu, mã chứng từ gốc, tên ${text.party}`}

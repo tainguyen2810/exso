@@ -81,8 +81,20 @@ class VoucherController extends Controller
         ]);
 
         $voucher = $this->cashbook->create([
-            ...$data,
             'kind' => $kind,
+            'branch_id' => (int) $data['branch_id'],
+            'type_id' => (int) $data['type_id'],
+            'party_type' => (string) $data['party_type'],
+            'party_id' => isset($data['party_id']) ? (int) $data['party_id'] : null,
+            'party_name' => $data['party_name'] ?? null,
+            'amount' => (int) $data['amount'],
+            'payment_method_id' => (int) $data['payment_method_id'],
+            'reference' => $data['reference'] ?? null,
+            'changes_debt' => (bool) ($data['changes_debt'] ?? false),
+            // Without a choice the voucher type decides.
+            ...(isset($data['affects_profit']) ? ['affects_profit' => (bool) $data['affects_profit']] : []),
+            'description' => $data['description'] ?? null,
+            'tags' => $data['tags'] ?? null,
             'recorded_at' => $this->recordedAt($data['recorded_at'] ?? null),
         ], $user);
 
@@ -304,7 +316,7 @@ class VoucherController extends Controller
         }
 
         // Keep the time of day of the voucher (or now) on the chosen date.
-        $time = ($voucher?->recorded_at ?? CarbonImmutable::now())->setTimezone($timezone);
+        $time = ($voucher !== null ? $voucher->recorded_at : CarbonImmutable::now())->setTimezone($timezone);
 
         return CarbonImmutable::parse($date->format('Y-m-d').' '.$time->format('H:i:s'), $timezone);
     }

@@ -4,6 +4,18 @@ Theo [Semantic Versioning](https://semver.org/lang/vi/). Bản chưa phát hành
 
 ## Chưa phát hành
 
+### G4: Sổ quỹ và Báo cáo
+
+- Module **Sổ quỹ**: phiếu thu (RVN), phiếu chi (PVN) với tab Hoàn thành / Đã hủy, nhóm người nộp/nhận (khách hàng, nhà cung cấp, nhân viên, đối tác VC, khác), thay đổi công nợ đối tượng, hạch toán kết quả kinh doanh, in phiếu kèm số tiền bằng chữ, xuất Excel.
+- **Phiếu tự động** (loại TUDONG, có chứng từ gốc, không sửa/hủy tay): thanh toán và hoàn tiền đơn hàng, khách trả hàng, thanh toán nhà cung cấp. Lệnh `cashbook:sync` tạo phiếu cho dữ liệu cũ.
+- **Loại phiếu thu/chi** có sẵn như Sapo, thêm/sửa/xóa loại riêng.
+- **Sổ quỹ** theo kỳ: số dư đầu kỳ + tổng thu − tổng chi = tồn cuối kỳ, lọc theo quỹ (tiền mặt, ngân hàng, ví), chi nhánh, hình thức thanh toán, người tạo.
+- Module **Báo cáo** với 23 báo cáo, lọc chi nhánh / thời gian / nguồn bán và xuất Excel: bán hàng theo thời gian, nhân viên, sản phẩm, đơn hàng, chi nhánh, nguồn, khách hàng, nhóm khách, trả hàng, thanh toán; nhập hàng theo thời gian, NCC, sản phẩm, thanh toán nhập hàng; tồn kho, xuất nhập tồn, dưới/vượt định mức; lãi lỗ (kỳ trước, kỳ hiện tại, % thay đổi), công nợ khách hàng, công nợ NCC; khách hàng theo thời gian, khu vực. Lưu báo cáo tùy chỉnh (riêng hoặc dùng chung).
+- Bảng tổng hợp theo ngày (`report_sales_daily`, `report_product_daily`) cập nhật qua hàng đợi khi đơn hoàn thành hoặc khách trả hàng; dựng lại hằng đêm (`reports:rebuild --days=3`). Doanh thu ghi nhận theo ngày giao hàng thành công như Sapo.
+- Tổng quan: doanh thu hôm nay, biểu đồ 7 ngày và sản phẩm bán chạy lấy từ bảng tổng hợp, khớp với báo cáo.
+- Cron `schedule:run` chạy thêm `queue:work --stop-when-empty` mỗi phút (hosting không có Supervisor).
+- Dữ liệu mẫu bán hàng 7 ngày, phiếu chi thuê mặt bằng, phiếu thu thanh lý.
+
 ### G3: Khách hàng, Đơn hàng, Bán tại quầy
 
 - Module **Khách hàng**: danh sách (nợ hiện tại, tổng chi tiêu, số đơn), thêm/sửa, chi tiết với tab Lịch sử mua hàng, Công nợ, Liên hệ, Địa chỉ, Ghi chú; số điện thoại duy nhất (chuẩn hóa +84 → 0); khách từ sàn giữ mã trên sàn; nhập/xuất Excel; thao tác hàng loạt (chuyển nhóm, trạng thái, xóa).

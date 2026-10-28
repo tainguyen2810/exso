@@ -86,7 +86,7 @@ class CashVoucherType extends Model
 
         self::installDefaults();
 
-        return $find() ?? throw new \RuntimeException('Missing automatic voucher type.');
+        return self::query()->where('kind', $kind)->where('code', self::AUTO)->firstOrFail();
     }
 
     public function activityLabel(): string

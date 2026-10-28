@@ -25,22 +25,44 @@ const shift = (date: Date, days: number) => {
 };
 
 /** Quick periods like Sapo's date filter. */
-export function periodPresets(today = new Date()): (Period & { label: string })[] {
+export function periodPresets(
+    today = new Date(),
+): (Period & { label: string })[] {
     const year = today.getFullYear();
     const month = today.getMonth();
 
     return [
         { label: 'Hôm nay', from: toDmy(today), to: toDmy(today) },
-        { label: 'Hôm qua', from: toDmy(shift(today, -1)), to: toDmy(shift(today, -1)) },
-        { label: '7 ngày qua', from: toDmy(shift(today, -6)), to: toDmy(today) },
-        { label: '30 ngày qua', from: toDmy(shift(today, -29)), to: toDmy(today) },
-        { label: 'Tháng này', from: toDmy(new Date(year, month, 1)), to: toDmy(today) },
+        {
+            label: 'Hôm qua',
+            from: toDmy(shift(today, -1)),
+            to: toDmy(shift(today, -1)),
+        },
+        {
+            label: '7 ngày qua',
+            from: toDmy(shift(today, -6)),
+            to: toDmy(today),
+        },
+        {
+            label: '30 ngày qua',
+            from: toDmy(shift(today, -29)),
+            to: toDmy(today),
+        },
+        {
+            label: 'Tháng này',
+            from: toDmy(new Date(year, month, 1)),
+            to: toDmy(today),
+        },
         {
             label: 'Tháng trước',
             from: toDmy(new Date(year, month - 1, 1)),
             to: toDmy(new Date(year, month, 0)),
         },
-        { label: 'Năm nay', from: toDmy(new Date(year, 0, 1)), to: toDmy(today) },
+        {
+            label: 'Năm nay',
+            from: toDmy(new Date(year, 0, 1)),
+            to: toDmy(today),
+        },
     ];
 }
 
@@ -82,10 +104,15 @@ export function PeriodPicker({
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
-                    className={cn('justify-between gap-2 bg-background font-normal', className)}
+                    className={cn(
+                        'justify-between gap-2 bg-background font-normal',
+                        className,
+                    )}
                 >
                     <CalendarDays className="size-4 text-muted-foreground" />
-                    {label && <span className="text-muted-foreground">{label}</span>}
+                    {label && (
+                        <span className="text-muted-foreground">{label}</span>
+                    )}
                     <span>
                         {current
                             ? `${current.label} (${value.from} - ${value.to})`
@@ -102,7 +129,8 @@ export function PeriodPicker({
                             type="button"
                             className={cn(
                                 'rounded px-2 py-1.5 text-left text-sm hover:bg-accent',
-                                current?.label === preset.label && 'text-primary',
+                                current?.label === preset.label &&
+                                    'text-primary',
                             )}
                             onClick={() => apply(preset)}
                         >

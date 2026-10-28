@@ -77,6 +77,8 @@ test('stock counts only the chosen branch, and only branches of the user', funct
 });
 
 test('an orders module fills the sales section through the filter', function () {
+    // Only this filter, without the modules' own.
+    Hook::removeAll('dashboard.sales');
     Hook::addFilter('dashboard.sales', function (array $sales, DashboardContext $context): array {
         $sales['ready'] = true;
         $sales['today']['revenue'] = 1500000;

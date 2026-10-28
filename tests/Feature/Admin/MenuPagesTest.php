@@ -18,11 +18,11 @@ test('pages of later phases are guarded by their permission', function (string $
 
 test('a coming soon page tells which phase builds it', function () {
     $this->actingAs(owner())
-        ->get('/cashbook')
+        ->get('/shipments')
         ->assertInertia(fn (Assert $page) => $page
             ->component('coming-soon')
-            ->where('title', 'Sổ quỹ')
-            ->where('phase', 'G4'));
+            ->where('title', 'Quản lý vận đơn')
+            ->where('phase', 'G6'));
 });
 
 test('the config hub opens for anyone who can see one of its pages', function () {

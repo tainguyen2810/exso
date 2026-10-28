@@ -9,6 +9,7 @@ use Modules\Cashbook\Models\CashVoucher;
 use Modules\Cashbook\Models\CashVoucherType;
 use Modules\Cashbook\Services\CashbookService;
 use Modules\Customer\Models\CustomerDebt;
+use Modules\Customer\Services\CustomerLedger;
 use Modules\Order\Models\Order;
 use Modules\Order\Models\OrderPayment;
 use Modules\Order\Services\OrderService;
@@ -16,6 +17,7 @@ use Modules\Order\Services\ReturnService;
 use Modules\Purchase\Models\PurchaseReceipt;
 use Modules\Purchase\Models\Supplier;
 use Modules\Purchase\Services\PurchaseService;
+use Modules\Purchase\Services\SupplierLedger;
 
 function cashbookSupplier(): Supplier
 {
@@ -111,7 +113,7 @@ test('a manual receipt can lower a customer debt and cancelling it restores the 
     $owner = owner();
     $this->actingAs($owner);
     $an = customer();
-    app(\Modules\Customer\Services\CustomerLedger::class)->record($an, CustomerDebt::ADJUSTMENT, 500000);
+    app(CustomerLedger::class)->record($an, CustomerDebt::ADJUSTMENT, 500000);
     $cashbook = app(CashbookService::class);
 
     $voucher = $cashbook->create([
@@ -141,7 +143,7 @@ test('a manual payment to a supplier lowers what the store owes', function () {
     $owner = owner();
     $this->actingAs($owner);
     $abc = cashbookSupplier();
-    app(\Modules\Purchase\Services\SupplierLedger::class)->record($abc, 'purchase', 1000000);
+    app(SupplierLedger::class)->record($abc, 'purchase', 1000000);
 
     app(CashbookService::class)->create([
         'kind' => CashVoucher::PAYMENT,

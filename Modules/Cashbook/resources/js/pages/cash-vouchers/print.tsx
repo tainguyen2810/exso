@@ -42,7 +42,10 @@ export default function CashVoucherPrint({
     const rows: [string, string | null][] = [
         [receipt ? 'Người nộp tiền' : 'Người nhận tiền', voucher.party_name],
         ['Nhóm', partyTypes[voucher.party_type] ?? voucher.party_type],
-        [receipt ? 'Lý do thu' : 'Lý do chi', voucher.description || voucher.type],
+        [
+            receipt ? 'Lý do thu' : 'Lý do chi',
+            voucher.description || voucher.type,
+        ],
         ['Loại phiếu', voucher.type],
         ['Hình thức thanh toán', voucher.method_name],
         ['Chứng từ gốc', voucher.document_code],
@@ -54,7 +57,11 @@ export default function CashVoucherPrint({
     return (
         <>
             <Head title={`In ${voucher.code}`} />
-            <style>{'@page { size: A5 landscape; margin: 10mm; } @media print { .no-print { display: none !important; } }'}</style>
+            <style>
+                {
+                    '@page { size: A5 landscape; margin: 10mm; } @media print { .no-print { display: none !important; } }'
+                }
+            </style>
             <div className="min-h-screen bg-muted py-6 text-black print:bg-white print:py-0">
                 <div className="no-print mx-auto mb-4 flex w-fit">
                     <Button size="sm" onClick={() => window.print()}>

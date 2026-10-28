@@ -1,0 +1,9 @@
+{
+    "name": "Report",
+    "alias": "report",
+    "description": "Báo cáo: bán hàng, nhập hàng, kho, tài chính (lãi lỗ, công nợ), khách hàng; bảng tổng hợp doanh thu theo ngày cho Tổng quan.",
+    "keywords": [],
+    "priority": 70,
+    "providers": ["Modules\\Report\\Providers\\ReportServiceProvider"],
+    "files": []
+}

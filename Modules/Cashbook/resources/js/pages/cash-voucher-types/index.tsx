@@ -217,7 +217,9 @@ function TypeDialog({
                 <Input
                     id="type-name"
                     value={form.data.name}
-                    onChange={(event) => form.setData('name', event.target.value)}
+                    onChange={(event) =>
+                        form.setData('name', event.target.value)
+                    }
                     maxLength={255}
                     autoFocus
                 />
@@ -228,7 +230,9 @@ function TypeDialog({
                 <Input
                     id="type-code"
                     value={form.data.code}
-                    onChange={(event) => form.setData('code', event.target.value)}
+                    onChange={(event) =>
+                        form.setData('code', event.target.value)
+                    }
                     maxLength={50}
                     placeholder="Để trống để tự sinh"
                     disabled={type?.is_system}

@@ -94,13 +94,15 @@ export default function CashVoucherForm({
 
     const form = useForm({
         kind,
-        branch_id: defaultBranch ?? branches[0]?.id ?? null,
+        branch_id: (defaultBranch ?? branches[0]?.id ?? null) as number | null,
         type_id: voucher?.type_id ?? null,
         party_type: voucher?.party_type ?? 'customer',
         party_id: voucher?.party_id ?? null,
         party_name: voucher?.party_name ?? '',
         amount: voucher?.amount ?? null,
-        payment_method_id: cashMethod?.id ?? paymentMethods[0]?.id ?? null,
+        payment_method_id: (cashMethod?.id ?? paymentMethods[0]?.id ?? null) as
+            | number
+            | null,
         reference: voucher?.reference ?? '',
         changes_debt: voucher?.changes_debt ?? true,
         affects_profit: voucher?.affects_profit ?? false,
@@ -208,7 +210,9 @@ export default function CashVoucherForm({
                                     <dt className="text-muted-foreground">
                                         Ngày tạo
                                     </dt>
-                                    <dd>{formatDateTime(voucher.created_at)}</dd>
+                                    <dd>
+                                        {formatDateTime(voucher.created_at)}
+                                    </dd>
                                     <dt className="text-muted-foreground">
                                         Ngày ghi nhận
                                     </dt>
@@ -218,7 +222,9 @@ export default function CashVoucherForm({
                                     <dt className="text-muted-foreground">
                                         Ngày cập nhật
                                     </dt>
-                                    <dd>{formatDateTime(voucher.updated_at)}</dd>
+                                    <dd>
+                                        {formatDateTime(voucher.updated_at)}
+                                    </dd>
                                 </dl>
                             ) : (
                                 <Field
@@ -309,9 +315,7 @@ export default function CashVoucherForm({
                         >
                             <OptionSelect
                                 value={form.data.party_type}
-                                onChange={(value) =>
-                                    setParty(value ?? 'other')
-                                }
+                                onChange={(value) => setParty(value ?? 'other')}
                                 options={Object.entries(parties).map(
                                     ([value, label]) => ({ value, label }),
                                 )}
@@ -320,7 +324,9 @@ export default function CashVoucherForm({
                         </Field>
                         <Field
                             label={`Tên ${text.party} *`}
-                            error={form.errors.party_id ?? form.errors.party_name}
+                            error={
+                                form.errors.party_id ?? form.errors.party_name
+                            }
                         >
                             {editing ? (
                                 voucher?.party_url ? (
@@ -331,7 +337,10 @@ export default function CashVoucherForm({
                                         {voucher.party_name}
                                     </Link>
                                 ) : (
-                                    <Input value={voucher?.party_name} disabled />
+                                    <Input
+                                        value={voucher?.party_name}
+                                        disabled
+                                    />
                                 )
                             ) : form.data.party_type === 'customer' ? (
                                 <CustomerPicker
@@ -431,7 +440,9 @@ export default function CashVoucherForm({
                                 <OptionSelect
                                     value={
                                         form.data.payment_method_id
-                                            ? String(form.data.payment_method_id)
+                                            ? String(
+                                                  form.data.payment_method_id,
+                                              )
                                             : null
                                     }
                                     onChange={(value) =>
@@ -463,7 +474,10 @@ export default function CashVoucherForm({
                                 checked={form.data.changes_debt}
                                 disabled={editing}
                                 onCheckedChange={(checked) =>
-                                    form.setData('changes_debt', checked === true)
+                                    form.setData(
+                                        'changes_debt',
+                                        checked === true,
+                                    )
                                 }
                             />
                             Thay đổi công nợ đối tượng{' '}

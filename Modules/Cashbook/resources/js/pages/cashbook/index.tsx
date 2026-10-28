@@ -177,7 +177,11 @@ export default function Cashbook({
                     {sign(Minus)}
                     {figure('Tổng chi', summary.payments, 'text-destructive')}
                     {sign(Equal)}
-                    {figure('Tồn cuối kỳ', summary.closing, 'text-primary font-semibold')}
+                    {figure(
+                        'Tồn cuối kỳ',
+                        summary.closing,
+                        'text-primary font-semibold',
+                    )}
                 </Card>
                 <DataTable
                     tableKey="cashbook"
