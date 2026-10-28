@@ -1,0 +1,9 @@
+{
+    "name": "Inventory",
+    "alias": "inventory",
+    "description": "Kho hàng: tồn kho theo chi nhánh, sổ kho, nhập hàng, kiểm hàng, chuyển hàng.",
+    "keywords": [],
+    "priority": 20,
+    "providers": ["Modules\\Inventory\\Providers\\InventoryServiceProvider"],
+    "files": []
+}

@@ -25,18 +25,45 @@ class ExcelImport
             $map[self::key($heading)] = $field;
         }
 
+        $sheet = self::read($path, $limit);
+        $columns = array_map(fn (string $heading): ?string => $map[self::key($heading)] ?? null, $sheet['headings']);
+        $rows = [];
+
+        foreach ($sheet['rows'] as $row) {
+            $data = array_fill_keys(array_values($headings), null);
+
+            foreach ($columns as $position => $field) {
+                if ($field !== null) {
+                    $data[$field] = $row['values'][$position] ?? null;
+                }
+            }
+
+            $rows[] = ['line' => $row['line'], 'data' => $data];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The raw first sheet: heading texts and the non-empty rows below them.
+     * For files whose columns are not fixed (e.g. one column per branch).
+     *
+     * @return array{headings: list<string>, rows: list<array{line: int, values: list<string|null>}>}
+     */
+    public static function read(string $path, int $limit = 5000): array
+    {
         $reader = str_ends_with(strtolower($path), '.csv') ? new CsvReader : new XlsxReader;
         $reader->open($path);
 
+        $headings = null;
         $rows = [];
-        $columns = null;
 
         foreach ($reader->getSheetIterator() as $sheet) {
             foreach ($sheet->getRowIterator() as $index => $row) {
-                $values = array_map(fn (mixed $value): ?string => self::text($value), $row->toArray());
+                $values = array_values(array_map(fn (mixed $value): ?string => self::text($value), $row->toArray()));
 
-                if ($columns === null) {
-                    $columns = array_map(fn (?string $heading): ?string => $map[self::key((string) $heading)] ?? null, $values);
+                if ($headings === null) {
+                    $headings = array_map(fn (?string $heading): string => (string) $heading, $values);
 
                     continue;
                 }
@@ -45,15 +72,7 @@ class ExcelImport
                     continue;
                 }
 
-                $data = array_fill_keys(array_values($headings), null);
-
-                foreach ($columns as $position => $field) {
-                    if ($field !== null) {
-                        $data[$field] = $values[$position] ?? null;
-                    }
-                }
-
-                $rows[] = ['line' => (int) $index, 'data' => $data];
+                $rows[] = ['line' => (int) $index, 'values' => $values];
 
                 if (count($rows) >= $limit) {
                     break;
@@ -65,10 +84,13 @@ class ExcelImport
 
         $reader->close();
 
-        return $rows;
+        return ['headings' => $headings ?? [], 'rows' => $rows];
     }
 
-    protected static function key(string $heading): string
+    /**
+     * Loose heading key: "Mã SKU*" → "ma_sku".
+     */
+    public static function key(string $heading): string
     {
         return Str::slug(str_replace('*', '', $heading), '_');
     }

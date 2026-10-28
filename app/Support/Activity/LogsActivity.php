@@ -41,6 +41,16 @@ trait LogsActivity
     }
 
     /**
+     * Attributes that change too often to be worth logging.
+     *
+     * @return list<string>
+     */
+    public function activityIgnored(): array
+    {
+        return [];
+    }
+
+    /**
      * @param  array<string, mixed>  $properties
      */
     protected function writeActivity(string $event, string $description, array $properties): void
@@ -54,7 +64,7 @@ trait LogsActivity
      */
     protected function loggableAttributes(array $attributes): array
     {
-        $ignored = [...$this->getHidden(), 'id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at', 'last_login_at'];
+        $ignored = [...$this->getHidden(), ...$this->activityIgnored(), 'id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at', 'last_login_at'];
 
         return array_diff_key($attributes, array_flip($ignored));
     }

@@ -36,8 +36,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'shipments' => ['Quản lý vận đơn', 'G6', 'orders.view'],
         'cod-reconciliations' => ['Đối soát COD và phí', 'G6', 'orders.view'],
         'shipping/partners' => ['Kết nối đối tác vận chuyển', 'G6', 'orders.view'],
-        'products' => ['Danh sách sản phẩm', 'G2', 'products.view'],
-        'inventory' => ['Quản lý kho', 'G2', 'inventory.view'],
         'purchase-orders' => ['Đặt hàng nhập', 'G2', 'inventory.view'],
         'purchase-receipts' => ['Nhập hàng', 'G2', 'inventory.view'],
         'stocktakes' => ['Kiểm hàng', 'G2', 'inventory.view'],
@@ -67,7 +65,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Hub of store settings; open to anyone who can see one of its pages.
     Route::get('config', function (Request $request) {
-        abort_unless($request->user()?->canAny(['settings.view', 'branches.view', 'staff.view', 'roles.view', 'activity_log.view']), 403);
+        abort_unless($request->user()?->canAny(['settings.view', 'branches.view', 'staff.view', 'roles.view', 'activity_log.view', 'products.update']), 403);
 
         return Inertia::render('config/index');
     })->name('config.index');

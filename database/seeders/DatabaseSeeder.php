@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
+use Modules\Product\Database\Seeders\ProductDemoSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -54,6 +55,10 @@ class DatabaseSeeder extends Seeder
                 $user->branches()->attach($branch);
                 $user->assignRole($role);
                 $user->roleAssignments()->create(['role_id' => Role::findByName($role)->id, 'branch_id' => null]);
+
+                if ($role === 'Nhân viên kho') {
+                    $user->givePermissionTo('products.view_cost');
+                }
             }
 
             // Example of a role limited to one branch: cashier at the main
@@ -64,6 +69,8 @@ class DatabaseSeeder extends Seeder
             $mixed->roleAssignments()->create(['role_id' => Role::findByName('Thu ngân')->id, 'branch_id' => $main->id]);
             $mixed->roleAssignments()->create(['role_id' => Role::findByName('Kế toán')->id, 'branch_id' => $second->id]);
             $mixed->givePermissionTo('products.view_cost');
+
+            $this->call(ProductDemoSeeder::class);
         });
     }
 }
