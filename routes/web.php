@@ -41,15 +41,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'shipments' => ['Quản lý vận đơn', 'G6', 'orders.view'],
         'cod-reconciliations' => ['Đối soát COD và phí', 'G6', 'orders.view'],
         'shipping/partners' => ['Kết nối đối tác vận chuyển', 'G6', 'orders.view'],
-        'cashbook/receipts' => ['Phiếu thu', 'G4', 'cashbook.view'],
-        'cashbook/payments' => ['Phiếu chi', 'G4', 'cashbook.view'],
-        'cashbook' => ['Sổ quỹ', 'G4', 'cashbook.view'],
-        'reports' => ['Tổng quan báo cáo', 'G4', 'reports.view'],
-        'reports/sales' => ['Báo cáo bán hàng', 'G4', 'reports.view'],
-        'reports/purchases' => ['Báo cáo nhập hàng', 'G4', 'reports.view'],
-        'reports/inventory' => ['Báo cáo kho', 'G4', 'reports.view'],
-        'reports/finance' => ['Báo cáo tài chính', 'G4', 'reports.view'],
-        'reports/customers' => ['Báo cáo khách hàng', 'G4', 'reports.view'],
         'marketplaces' => ['Sàn TMĐT', 'G7', 'orders.view'],
     ];
 

@@ -3,5 +3,7 @@
     "Inventory": true,
     "Purchase": true,
     "Customer": true,
-    "Order": true
+    "Order": true,
+    "Cashbook": true,
+    "Report": true
 }

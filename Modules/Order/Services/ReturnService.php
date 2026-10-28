@@ -11,6 +11,7 @@ use Modules\Customer\Models\CustomerDebt;
 use Modules\Customer\Services\CustomerLedger;
 use Modules\Inventory\Models\StockMovement;
 use Modules\Inventory\Services\InventoryService;
+use Modules\Order\Events\OrderReturned;
 use Modules\Order\Models\Order;
 use Modules\Order\Models\OrderItem;
 use Modules\Order\Models\OrderReturn;
@@ -132,6 +133,7 @@ class ReturnService
         }
 
         $this->orders->refreshCustomer($order->customer_id);
+        DB::afterCommit(fn () => event(new OrderReturned($return)));
 
         return $return;
     }

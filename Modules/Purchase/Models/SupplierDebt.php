@@ -42,11 +42,15 @@ class SupplierDebt extends Model
 
     public const CANCEL = 'cancel';
 
+    /** Phiếu thu/chi of the cash book cancelled (or entered) by hand. */
+    public const ADJUSTMENT = 'adjustment';
+
     public const TYPES = [
         self::PURCHASE => 'Nhập hàng',
         self::PAYMENT => 'Thanh toán',
         self::RETURN => 'Trả hàng',
         self::CANCEL => 'Hủy phiếu nhập',
+        self::ADJUSTMENT => 'Điều chỉnh công nợ',
     ];
 
     public const PAYMENT_METHODS = [
