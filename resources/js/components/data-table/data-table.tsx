@@ -70,6 +70,11 @@ type Props<T> = {
     filters?: FilterDef[];
     /** Quick tabs above the toolbar, bound to one select filter. */
     tabs?: Tabs;
+    /**
+     * Filters set outside the table (e.g. the period of a report page):
+     * kept when switching tabs and not shown as chips.
+     */
+    keepFilters?: string[];
     bulkActions?: BulkAction[];
     /** Rows that cannot be selected for bulk actions (e.g. the store owner). */
     canSelect?: (row: T) => boolean;
@@ -97,6 +102,7 @@ export function DataTable<T>({
     searchPlaceholder = 'Tìm kiếm',
     filters = [],
     tabs,
+    keepFilters = [],
     bulkActions = [],
     canSelect = () => true,
     rowActions,
@@ -142,7 +148,8 @@ export function DataTable<T>({
     const activeFilters = filters.filter(
         (filter) =>
             query.filter[filter.key] !== undefined &&
-            filter.key !== tabs?.filter,
+            filter.key !== tabs?.filter &&
+            !keepFilters.includes(filter.key),
     );
     // First column holds the column chooser and the select checkbox.
     const colSpan = 1 + shown.length + (expand ? 1 : 0) + (rowActions ? 1 : 0);
@@ -176,7 +183,10 @@ export function DataTable<T>({
         ? [{ value: '', label: 'Tất cả' }, ...tabs.options]
         : [{ value: '', label: 'Tất cả' }];
     const tabFilterOnly = Object.keys(query.filter).every(
-        (key) => key === tabs?.filter,
+        (key) => key === tabs?.filter || keepFilters.includes(key),
+    );
+    const kept = Object.fromEntries(
+        keepFilters.map((key) => [key, query.filter[key]]),
     );
     const isBuiltInTab = (value: string) =>
         !currentView &&
@@ -226,10 +236,11 @@ export function DataTable<T>({
                                     search: '',
                                     filter: tabs
                                         ? {
+                                              ...kept,
                                               [tabs.filter]:
                                                   tab.value || undefined,
                                           }
-                                        : {},
+                                        : kept,
                                 })
                             }
                             className={cn(
@@ -329,10 +340,11 @@ export function DataTable<T>({
                                     search: '',
                                     filter: tabs
                                         ? {
+                                              ...kept,
                                               [tabs.filter]:
                                                   query.filter[tabs.filter],
                                           }
-                                        : {},
+                                        : kept,
                                 })
                             }
                         >

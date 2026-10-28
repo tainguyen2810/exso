@@ -8,6 +8,7 @@ use App\Tenancy\BelongsToTenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * Money received for an order (amount > 0) or paid back (refund, < 0).
@@ -75,5 +76,15 @@ class OrderPayment extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * The document the money is for besides the order (e.g. a return).
+     *
+     * @return MorphTo<Model, $this>
+     */
+    public function reference(): MorphTo
+    {
+        return $this->morphTo();
     }
 }

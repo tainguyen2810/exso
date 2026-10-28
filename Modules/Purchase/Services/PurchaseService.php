@@ -9,6 +9,7 @@ use Modules\Inventory\Models\StockMovement;
 use Modules\Inventory\Services\InventoryService;
 use Modules\Product\Models\Product;
 use Modules\Product\Models\ProductVariant;
+use Modules\Purchase\Events\SupplierPaymentRecorded;
 use Modules\Purchase\Models\PurchaseOrder;
 use Modules\Purchase\Models\PurchaseReceipt;
 use Modules\Purchase\Models\PurchaseReceiptItem;
@@ -274,12 +275,16 @@ class PurchaseService
 
             $locked->update(['paid' => $locked->paid + $amount]);
 
-            $this->ledger->record($locked->supplier, SupplierDebt::PAYMENT, -$amount, [
+            $line = $this->ledger->record($locked->supplier, SupplierDebt::PAYMENT, -$amount, [
                 'reference' => $locked,
                 'reference_code' => $locked->code,
                 'payment_method' => $method,
                 'note' => $note,
             ]);
+
+            if ($line !== null) {
+                DB::afterCommit(fn () => event(new SupplierPaymentRecorded($line, $locked)));
+            }
 
             $receipt->setRawAttributes($locked->getAttributes(), true);
         });

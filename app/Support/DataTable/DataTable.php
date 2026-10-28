@@ -307,7 +307,7 @@ class DataTable
             ->all());
     }
 
-    protected static function parseDate(mixed $value, string $timezone): ?Carbon
+    public static function parseDate(mixed $value, string $timezone): ?Carbon
     {
         if (! is_string($value) || $value === '') {
             return null;

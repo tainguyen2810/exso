@@ -1,0 +1,9 @@
+{
+    "name": "Cashbook",
+    "alias": "cashbook",
+    "description": "Sổ quỹ: phiếu thu, phiếu chi (tự động từ đơn hàng, nhập hàng hoặc nhập tay), loại phiếu, sổ quỹ theo tiền mặt / ngân hàng.",
+    "keywords": [],
+    "priority": 60,
+    "providers": ["Modules\\Cashbook\\Providers\\CashbookServiceProvider"],
+    "files": []
+}
