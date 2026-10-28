@@ -12,17 +12,17 @@ import type { NavItem } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
     {
-        title: 'Profile',
+        title: 'Thông tin cá nhân',
         href: edit(),
         icon: null,
     },
     {
-        title: 'Security',
+        title: 'Bảo mật',
         href: editSecurity(),
         icon: null,
     },
     {
-        title: 'Appearance',
+        title: 'Giao diện',
         href: editAppearance(),
         icon: null,
     },
@@ -34,8 +34,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     return (
         <div className="px-4 py-6">
             <Heading
-                title="Settings"
-                description="Manage your profile and account settings"
+                title="Tài khoản của tôi"
+                description="Thông tin cá nhân, mật khẩu và giao diện"
             />
 
             <div className="flex flex-col lg:flex-row lg:space-x-12">

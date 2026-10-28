@@ -5,6 +5,7 @@ namespace App\Tenancy;
 use App\Models\Tenant;
 use Closure;
 use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Holds the tenant (store) the current request, job or command works for.
@@ -21,12 +22,14 @@ class TenantContext
     public function set(?Tenant $tenant): void
     {
         $this->tenant = $tenant;
+        $this->syncPermissionTeam();
     }
 
     public function get(): ?Tenant
     {
         if ($this->tenant === null && self::isStandalone()) {
             $this->tenant = $this->resolveStandaloneTenant();
+            $this->syncPermissionTeam();
         }
 
         return $this->tenant;
@@ -53,13 +56,21 @@ class TenantContext
     public function run(Tenant $tenant, Closure $callback): mixed
     {
         $previous = $this->tenant;
-        $this->tenant = $tenant;
+        $this->set($tenant);
 
         try {
             return $callback();
         } finally {
-            $this->tenant = $previous;
+            $this->set($previous);
         }
+    }
+
+    /**
+     * Roles and permissions (spatie "teams") follow the current store.
+     */
+    protected function syncPermissionTeam(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId($this->tenant?->id);
     }
 
     public static function isStandalone(): bool

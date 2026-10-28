@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Branch;
+use App\Models\User;
+use App\Support\Branches\CurrentBranch;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,13 +38,37 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
-            'auth' => [
-                'user' => $request->user(),
+            'store' => fn (): array => ['name' => (string) settings('store.name', config('app.name'))],
+            'auth' => fn (): array => [
+                'user' => $user,
+                'permissions' => $user instanceof User ? $user->permissionNames() : [],
             ],
+            'branches' => fn (): array => $user instanceof User ? $this->branches($user) : ['current' => null, 'available' => []],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /**
+     * @return array{current: ?int, available: list<array{id: int, name: string}>}
+     */
+    protected function branches(User $user): array
+    {
+        $available = array_values(Branch::query()
+            ->whereIn('id', $user->branchIds())
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Branch $branch): array => ['id' => $branch->id, 'name' => $branch->name])
+            ->all());
+
+        return [
+            'current' => app(CurrentBranch::class)->id($user),
+            'available' => $available,
         ];
     }
 }

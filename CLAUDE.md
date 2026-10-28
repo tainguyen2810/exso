@@ -19,7 +19,7 @@ Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module).
 - Dev: `composer dev` (server + vite + queue + log). Dịch vụ phụ: `docker compose up -d` (MySQL, Redis, Mailpit) — tùy chọn.
 - Test: `php artisan test` — chạy trước mọi commit.
 - Lint PHP: `composer lint` (Pint). Kiểm tra JS/TS: `npm run check`, `npm run types:check`. PHPStan: `composer types:check`.
-- Cài nhanh không qua web: đặt `INSTALLER_INSTALLED=true`, `php artisan migrate`, tạo tenant + user bằng tinker.
+- Dữ liệu mẫu: `INSTALLER_INSTALLED=true php artisan migrate:fresh --seed` → chủ cửa hàng `admin@exso.test`, thu ngân `thungan@exso.test`, mật khẩu `password`.
 
 ## Cấu trúc
 
@@ -35,7 +35,11 @@ Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module).
 - Server tính lại tổng tiền đơn, không tin số từ client.
 - Mọi bảng nghiệp vụ có `tenant_id` (+ `branch_id` từ G1) và model dùng trait `BelongsToTenant`. Không query vượt tenant; nếu thật sự cần thì dùng `withoutGlobalScope(TenantScope::class)` và ghi chú lý do.
 - Thiếu tenant trong chế độ SaaS thì query trả rỗng (fail closed). Job/command chạy cho một cửa hàng phải bọc trong `tenancy()->run($tenant, ...)`.
-- Mọi route kiểm tra quyền bằng Policy (từ G1).
+- Quyền: định nghĩa trong `app/Authorization/Permissions.php` dạng `<module>.<action>` (view/create/update/delete/approve). Thêm module mới → thêm vào `modules()`, chạy `php artisan permissions:sync`, thêm mục menu trong `resources/js/config/menu.ts` với `permission`.
+- Mọi route kiểm tra quyền bằng middleware `can:<module>.<action>` (hoặc Policy khi cần kiểm theo bản ghi). Chủ cửa hàng (`users.is_owner`) qua `Gate::before` có toàn quyền.
+- Vai trò là của từng cửa hàng (spatie/laravel-permission, teams = tenant_id). `TenantContext` tự đặt team id.
+- Chi nhánh: user chỉ làm việc ở chi nhánh được gán (`$user->branchIds()`), chi nhánh đang chọn lấy từ `CurrentBranch`. Từ G2, dữ liệu theo chi nhánh phải lọc theo `branchIds()`.
+- Model nghiệp vụ quan trọng dùng trait `LogsActivity` (ghi giá trị trước/sau vào `activity_logs`, tự bỏ trường hidden).
 - Index bắt đầu bằng `tenant_id` cho các bảng lớn.
 
 ## Quy tắc nâng cấp

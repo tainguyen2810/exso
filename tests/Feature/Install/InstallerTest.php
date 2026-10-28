@@ -42,7 +42,10 @@ test('install creates the store, its settings and an admin who can log in', func
     expect(File::exists($this->marker))->toBeTrue()
         ->and(Tenant::query()->sole()->name)->toBe('ITSO')
         ->and($admin->tenant_id)->toBe(Tenant::query()->sole()->id)
-        ->and(settings('store.name'))->toBe('ITSO');
+        ->and(settings('store.name'))->toBe('ITSO')
+        ->and($admin->is_owner)->toBeTrue()
+        ->and($admin->hasRole('Quản trị'))->toBeTrue()
+        ->and($admin->branches()->pluck('code')->all())->toBe(['CN01']);
 
     $this->post('/login', ['email' => 'admin@itso.vn', 'password' => 'matkhau123'])
         ->assertRedirect('/dashboard');
