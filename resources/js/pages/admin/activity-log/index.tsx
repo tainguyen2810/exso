@@ -1,5 +1,4 @@
 import { Head } from '@inertiajs/react';
-import { PageHeader } from '@/components/app/page-header';
 import { DataTable } from '@/components/data-table';
 import type { Column, TableData } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
@@ -115,11 +114,7 @@ export default function ActivityLogIndex({
     return (
         <>
             <Head title="Nhật ký hoạt động" />
-            <div className="space-y-4 p-4 md:p-6">
-                <PageHeader
-                    title="Nhật ký hoạt động"
-                    description="Ai đã làm gì, lúc nào. Bấm mũi tên ở đầu dòng để xem giá trị trước và sau khi sửa."
-                />
+            <div className="px-4 pt-5 pb-10 md:px-8">
                 <DataTable
                     tableKey="activity-log"
                     data={logs}

@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { FileSpreadsheet, Upload } from 'lucide-react';
+import { FileSpreadsheet, Download } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
@@ -51,10 +51,13 @@ export function ImportDialog({
             }}
         >
             <DialogTrigger asChild>
-                <Button variant="outline">
-                    <Upload />
-                    <span className="hidden sm:inline">Nhập Excel</span>
-                </Button>
+                <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary"
+                >
+                    <Download className="size-4" />
+                    Nhập file
+                </button>
             </DialogTrigger>
             <DialogContent>
                 <form onSubmit={submit} className="space-y-4">

@@ -10,7 +10,7 @@ import {
     CommandItem,
     CommandList,
 } from '@/components/ui/command';
-import { filterMenu, menu } from '@/config/menu';
+import { configEntries, filterMenu, menu } from '@/config/menu';
 import { useCan } from '@/hooks/use-can';
 import { toUrl } from '@/lib/utils';
 
@@ -31,22 +31,9 @@ export function CommandPalette() {
     const [open, setOpen] = useState(false);
     const can = useCan();
     const groups = filterMenu(menu, can);
-
-    useEffect(() => {
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (
-                event.key.toLowerCase() === 'k' &&
-                (event.metaKey || event.ctrlKey)
-            ) {
-                event.preventDefault();
-                setOpen((value) => !value);
-            }
-        };
-
-        window.addEventListener('keydown', onKeyDown);
-
-        return () => window.removeEventListener('keydown', onKeyDown);
-    }, []);
+    const settings = configEntries.filter(
+        (entry) => !entry.phase && can(entry.permission),
+    );
 
     // Products by name / SKU / barcode, for users who can see products.
     const [term, setTerm] = useState('');
@@ -78,6 +65,22 @@ export function CommandPalette() {
         };
     }, [term, canSearchProducts]);
 
+    useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (
+                event.key.toLowerCase() === 'k' &&
+                (event.metaKey || event.ctrlKey)
+            ) {
+                event.preventDefault();
+                setOpen((value) => !value);
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, []);
+
     const go = (href: string) => {
         setOpen(false);
         router.visit(href);
@@ -88,7 +91,7 @@ export function CommandPalette() {
             <Button
                 variant="outline"
                 size="sm"
-                className="hidden w-56 justify-start gap-2 text-muted-foreground sm:flex"
+                className="hidden w-64 justify-start gap-2 bg-muted font-normal text-muted-foreground shadow-none lg:flex"
                 onClick={() => setOpen(true)}
             >
                 <Search className="size-4" />
@@ -100,7 +103,7 @@ export function CommandPalette() {
             <Button
                 variant="ghost"
                 size="icon"
-                className="sm:hidden"
+                className="lg:hidden"
                 onClick={() => setOpen(true)}
                 aria-label="Tìm nhanh"
             >
@@ -125,20 +128,16 @@ export function CommandPalette() {
                             heading={group.title ?? 'Chức năng'}
                         >
                             {group.items.flatMap((item) =>
-                                [item, ...(item.children ?? [])].map(
-                                    (entry) => (
-                                        <CommandItem
-                                            key={entry.title}
-                                            value={entry.title}
-                                            onSelect={() =>
-                                                go(toUrl(entry.href))
-                                            }
-                                        >
-                                            {entry.icon && <entry.icon />}
-                                            {entry.title}
-                                        </CommandItem>
-                                    ),
-                                ),
+                                (item.children ?? [item]).map((entry) => (
+                                    <CommandItem
+                                        key={toUrl(entry.href)}
+                                        value={`${item.title} ${entry.title}`}
+                                        onSelect={() => go(toUrl(entry.href))}
+                                    >
+                                        {item.icon && <item.icon />}
+                                        {entry.title}
+                                    </CommandItem>
+                                )),
                             )}
                         </CommandGroup>
                     ))}
@@ -161,6 +160,20 @@ export function CommandPalette() {
                                     <span className="text-xs text-muted-foreground">
                                         {variant.sku}
                                     </span>
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    )}
+                    {settings.length > 0 && (
+                        <CommandGroup heading="Cấu hình">
+                            {settings.map((entry) => (
+                                <CommandItem
+                                    key={entry.href}
+                                    value={`Cấu hình ${entry.title}`}
+                                    onSelect={() => go(entry.href)}
+                                >
+                                    <entry.icon />
+                                    {entry.title}
                                 </CommandItem>
                             ))}
                         </CommandGroup>

@@ -1,4 +1,4 @@
-import { Columns3 } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -84,11 +84,17 @@ export function ColumnChooser<T>({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" title="Chọn cột hiển thị">
-                    <Columns3 />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-muted-foreground"
+                    title="Chọn cột hiển thị"
+                    aria-label="Chọn cột hiển thị"
+                >
+                    <Settings />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuLabel>Cột hiển thị</DropdownMenuLabel>
                 {columns
                     .filter((column) => !column.fixed)

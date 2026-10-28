@@ -23,7 +23,7 @@ export function ConfirmDelete({
     url: string;
     title: string;
     description: string;
-    /** Replaces the default trash icon button. */
+    /** Custom button, e.g. Sapo's red "Xóa …" at the bottom of a form. */
     trigger?: ReactNode;
 }) {
     const [processing, setProcessing] = useState(false);

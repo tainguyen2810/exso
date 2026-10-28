@@ -1,7 +1,8 @@
 import { Link } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { useEffect, useId, useRef } from 'react';
 import type { FormEvent, ReactNode } from 'react';
+import { PageTitle, TopbarActions } from '@/components/app/topbar';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -13,13 +14,14 @@ import {
 import { cn } from '@/lib/utils';
 
 /**
- * Create/edit page layout used by every module: title bar with back link,
- * main column (8/12) and side column (4/12), sticky save bar. F1 or Ctrl+S
- * saves.
+ * Create/edit page layout used by every module, like Sapo: the topbar shows
+ * "‹ Quay lại …" with Hủy / Lưu; content is a main column (8/12) and a side
+ * column (4/12); Lưu is repeated at the bottom. F1 or Ctrl+S saves.
  */
 export function DocumentForm({
     title,
     backHref,
+    backLabel = 'Quay lại',
     onSubmit,
     processing = false,
     isDirty = true,
@@ -30,15 +32,18 @@ export function DocumentForm({
 }: {
     title: string;
     backHref: string;
+    /** Text of the back link in the topbar, e.g. "Quay lại danh sách nhân viên". */
+    backLabel?: string;
     onSubmit: () => void;
     processing?: boolean;
     isDirty?: boolean;
     submitLabel?: string;
     aside?: ReactNode;
-    /** Extra buttons next to Save (e.g. delete). */
+    /** Extra buttons, e.g. delete; shown at the bottom left like Sapo. */
     actions?: ReactNode;
     children: ReactNode;
 }) {
+    const id = useId();
     const submit = useRef(onSubmit);
     submit.current = onSubmit;
 
@@ -63,19 +68,35 @@ export function DocumentForm({
         onSubmit();
     };
 
+    const saveButton = (
+        <Button
+            form={id}
+            disabled={processing || !isDirty}
+            title="Lưu (F1 hoặc Ctrl+S)"
+        >
+            {submitLabel}
+        </Button>
+    );
+
     return (
-        <form onSubmit={handle} className="flex min-h-full flex-col">
-            <div className="flex-1 space-y-4 p-4 md:p-6">
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href={backHref} aria-label="Quay lại">
-                            <ArrowLeft />
-                        </Link>
-                    </Button>
-                    <h1 className="text-xl font-semibold tracking-tight">
-                        {title}
-                    </h1>
-                </div>
+        <form id={id} onSubmit={handle} className="flex min-h-full flex-col">
+            <PageTitle>
+                <Link
+                    href={backHref}
+                    className="inline-flex items-center gap-1 truncate text-sm text-muted-foreground hover:text-primary"
+                >
+                    <ChevronLeft className="size-4" />
+                    {backLabel}
+                </Link>
+            </PageTitle>
+            <TopbarActions>
+                <Button variant="outline" asChild>
+                    <Link href={backHref}>Hủy</Link>
+                </Button>
+                {saveButton}
+            </TopbarActions>
+            <div className="mx-auto w-full max-w-[1200px] flex-1 space-y-4 px-4 pt-5 pb-10 md:px-8">
+                <h2 className="text-xl font-medium">{title}</h2>
                 <div className="grid items-start gap-4 lg:grid-cols-12">
                     <div
                         className={cn(
@@ -89,16 +110,13 @@ export function DocumentForm({
                         <div className="space-y-4 lg:col-span-4">{aside}</div>
                     )}
                 </div>
-            </div>
-            <div className="sticky bottom-0 z-10 flex items-center justify-end gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur md:px-6">
-                <span className="mr-auto hidden text-xs text-muted-foreground sm:inline">
-                    Nhấn F1 hoặc Ctrl+S để lưu
-                </span>
-                {actions}
-                <Button variant="outline" asChild>
-                    <Link href={backHref}>Hủy</Link>
-                </Button>
-                <Button disabled={processing || !isDirty}>{submitLabel}</Button>
+                <div className="flex items-center gap-2 border-t pt-4">
+                    {actions}
+                    <span className="ml-auto hidden text-xs text-muted-foreground sm:inline">
+                        F1 hoặc Ctrl+S để lưu
+                    </span>
+                    {saveButton}
+                </div>
             </div>
         </form>
     );
@@ -117,14 +135,14 @@ export function FormSection({
     children: ReactNode;
 }) {
     return (
-        <Card>
-            <CardHeader>
+        <Card className="gap-0 py-0">
+            <CardHeader className="gap-1 border-b px-5 py-4">
                 <CardTitle>{title}</CardTitle>
                 {description && (
                     <CardDescription>{description}</CardDescription>
                 )}
             </CardHeader>
-            <CardContent className={cn('grid gap-4', className)}>
+            <CardContent className={cn('grid gap-4 px-5 py-5', className)}>
                 {children}
             </CardContent>
         </Card>

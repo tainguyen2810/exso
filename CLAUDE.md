@@ -58,11 +58,14 @@ Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module).
 ## Giao diện
 
 - Tiếng Việt; số 1.234.567; ngày dd/MM/yyyy; múi giờ Asia/Ho_Chi_Minh.
-- Bố cục tham khảo Sapo (sidebar tối, topbar mỏng, nội dung dạng thẻ) nhưng dùng tên, logo, màu riêng.
+- Bố cục giống Sapo GO (sidebar xanh navy 230px, topbar trắng 52px, nền #F0F1F1, nút/link #0088FF) nhưng giữ tên, logo EXSO/ITSO. Ghi chú khảo sát Sapo: `exso-docs/sapo-khao-sat.md` trong thư mục dự án.
+- Menu: `resources/js/config/menu.ts` theo cây menu Sapo; trang chưa làm trỏ tới route "sắp có" trong `$upcoming` (routes/web.php) — giai đoạn nào làm trang đó thì xóa dòng tương ứng. Trang cài đặt cửa hàng nằm dưới Cấu hình (`/config`, mục trong `configEntries`); `/settings/*` là tài khoản cá nhân.
+- Tiêu đề trang = breadcrumb cuối, hiện trên topbar; muốn đổi thì dùng `<PageTitle>`, nút trên topbar dùng `<TopbarActions>` (`@/components/app/topbar`).
+- Trang danh sách: nút chính (+ Thêm …) truyền vào `DataTable actions`, "Xuất file / Nhập file" nằm trên thẻ bên trái; tên bản ghi là link xanh (`RecordLink`) mở trang sửa, không dùng icon bút/thùng rác ở dòng; xóa nằm ở cuối trang sửa (nút đỏ, `ConfirmDelete trigger`) hoặc thao tác hàng loạt. Bộ lọc đã lưu hiện thành tab. Trạng thái dùng `Pill`/`StatusBadge`.
 - Trang danh sách: server dùng `App\Support\DataTable\DataTable::for($query, $request, '<key>')` (->search, ->filterExact, ->filterDateRange, ->filter, ->sortable, ->paginate / ->export); trang React dùng `<DataTable>` (`@/components/data-table`). Query string: `search`, `filter[key]`, `sort=-cot`, `per_page` (20/50/100). Xuất Excel = cùng route + `?export=xlsx`.
 - Thao tác hàng loạt: route `POST <module>/bulk` {action, ids}, kiểm quyền như thao tác đơn lẻ.
 - Excel: `App\Support\Excel\ExcelExport` / `ExcelImport` (OpenSpout, ghi/đọc từng dòng; `ExcelImport::read()` khi cột không cố định). Nhập: có dòng lỗi thì không nhập dòng nào, báo lỗi theo số dòng; luôn có tệp mẫu. Nhập sản phẩm nhận cả tệp xuất từ Sapo: cột `PL_<chính sách giá>`, `LC_<chi nhánh>_Tồn kho ban đầu` / `_Giá vốn khởi tạo`, các dòng cùng tên sản phẩm (hoặc cùng "Đường dẫn/alias") là các phiên bản; SKU đã có thì cập nhật, không đụng tồn kho.
-- Trang tạo/sửa dùng `DocumentForm` (+ `FormSection`) 2 cột 8/4, thanh lưu cố định, F1/Ctrl+S lưu.
+- Trang tạo/sửa dùng `DocumentForm` (+ `FormSection`) 2 cột 8/4; topbar có "‹ Quay lại …" (`backLabel`) + Hủy/Lưu, cuối trang có Xóa (trái) và Lưu (phải); F1/Ctrl+S lưu.
 - Component dùng chung thêm ở G2: `MoneyInput` (số 1.234.567), `NameCombobox` (chọn hoặc gõ tên mới), `VariantPicker` (tìm phiên bản theo tên/SKU/mã vạch qua `/products/variants/search`, F3), `ConfirmDelete` có `trigger`; `ui/switch`, `ui/popover`, `ui/textarea`.
 - Prop của trang không trùng tên prop dùng chung (`auth`, `store`, `branchContext`, `name`, `sidebarOpen`), vì prop trang sẽ đè lên.
 - Ngày nhập tay dạng dd/mm/yyyy (server nhận cả d/m/Y và Y-m-d).

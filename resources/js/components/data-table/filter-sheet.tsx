@@ -170,14 +170,16 @@ export function FilterSheet({
 export function FilterButton({
     count,
     onClick,
+    label = 'Bộ lọc',
 }: {
     count: number;
     onClick: () => void;
+    label?: string;
 }) {
     return (
-        <Button variant="outline" onClick={onClick} title="Bộ lọc (F10)">
+        <Button variant="outline" onClick={onClick} title={`${label} (F10)`}>
             <SlidersHorizontal />
-            Bộ lọc
+            {label}
             {count > 0 && (
                 <Badge className="h-5 min-w-5 rounded-full px-1.5">
                     {count}

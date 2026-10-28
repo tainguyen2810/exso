@@ -1,12 +1,10 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Plus } from 'lucide-react';
-import { ConfirmDelete } from '@/components/app/confirm-delete';
+import { Plus } from 'lucide-react';
 import { ImportDialog } from '@/components/app/import-dialog';
-import { PageHeader } from '@/components/app/page-header';
-import { StatusBadge } from '@/components/app/status-badge';
+import { RecordLink } from '@/components/app/record-link';
+import { Pill, StatusBadge } from '@/components/app/status-badge';
 import { DataTable } from '@/components/data-table';
 import type { BulkAction, Column, TableData } from '@/components/data-table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCan } from '@/hooks/use-can';
 import { formatNumber } from '@/lib/format';
@@ -33,8 +31,14 @@ const columns: Column<Branch>[] = [
         header: 'Mã',
         sort: 'code',
         fixed: true,
-        className: 'font-medium',
-        cell: (branch) => branch.code,
+        cell: (branch) => (
+            <RecordLink
+                href={`/branches/${branch.id}/edit`}
+                permission="branches.update"
+            >
+                {branch.code}
+            </RecordLink>
+        ),
     },
     {
         key: 'name',
@@ -44,9 +48,9 @@ const columns: Column<Branch>[] = [
             <>
                 {branch.name}
                 {branch.is_default && (
-                    <Badge variant="outline" className="ml-2">
+                    <Pill tone="info" className="ml-2">
                         Mặc định
-                    </Badge>
+                    </Pill>
                 )}
             </>
         ),
@@ -101,20 +105,7 @@ export default function BranchesIndex({
     return (
         <>
             <Head title="Chi nhánh" />
-            <div className="space-y-4 p-4 md:p-6">
-                <PageHeader
-                    title="Chi nhánh"
-                    description="Cửa hàng, kho của bạn. Nhân viên chỉ làm việc ở chi nhánh được gán."
-                    actions={
-                        can('branches.create') && (
-                            <Button asChild>
-                                <Link href="/branches/create">
-                                    <Plus /> Thêm chi nhánh
-                                </Link>
-                            </Button>
-                        )
-                    }
-                />
+            <div className="px-4 pt-5 pb-10 md:px-8">
                 <DataTable
                     tableKey="branches"
                     data={branches}
@@ -141,28 +132,16 @@ export default function BranchesIndex({
                             />
                         )
                     }
+                    actions={
+                        can('branches.create') && (
+                            <Button asChild>
+                                <Link href="/branches/create">
+                                    <Plus /> Thêm chi nhánh
+                                </Link>
+                            </Button>
+                        )
+                    }
                     empty="Không có chi nhánh nào."
-                    rowActions={(branch) => (
-                        <>
-                            {can('branches.update') && (
-                                <Button variant="ghost" size="icon" asChild>
-                                    <Link
-                                        href={`/branches/${branch.id}/edit`}
-                                        aria-label="Sửa"
-                                    >
-                                        <Pencil className="size-4" />
-                                    </Link>
-                                </Button>
-                            )}
-                            {can('branches.delete') && !branch.is_default && (
-                                <ConfirmDelete
-                                    url={`/branches/${branch.id}`}
-                                    title={`Xóa chi nhánh ${branch.name}?`}
-                                    description="Nhân viên đang gán chi nhánh này sẽ không còn làm việc ở đây."
-                                />
-                            )}
-                        </>
-                    )}
                 />
             </div>
         </>
