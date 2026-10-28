@@ -12,7 +12,7 @@ declare module '@inertiajs/core' {
             name: string;
             store: { name: string };
             auth: Auth;
-            branches: {
+            branchContext: {
                 current: number | null;
                 available: { id: number; name: string }[];
             };

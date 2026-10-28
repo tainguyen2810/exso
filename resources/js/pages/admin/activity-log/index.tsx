@@ -1,26 +1,9 @@
-import { Head, router } from '@inertiajs/react';
-import { Fragment, useState } from 'react';
+import { Head } from '@inertiajs/react';
 import { PageHeader } from '@/components/app/page-header';
-import { Pagination } from '@/components/app/pagination';
+import { DataTable } from '@/components/data-table';
+import type { Column, TableData } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { formatDateTime } from '@/lib/format';
-import type { Paginated } from '@/types';
 
 type Log = {
     id: number;
@@ -42,8 +25,6 @@ const events: Record<string, string> = {
     login: 'Đăng nhập',
 };
 
-const ALL = 'all';
-
 function show(value: unknown): string {
     if (value === null || value === undefined || value === '') {
         return '—';
@@ -60,192 +41,118 @@ function show(value: unknown): string {
     return JSON.stringify(value);
 }
 
+const columns: Column<Log>[] = [
+    {
+        key: 'created_at',
+        header: 'Thời gian',
+        sort: 'created_at',
+        fixed: true,
+        className: 'w-40 whitespace-nowrap',
+        cell: (log) => formatDateTime(log.created_at),
+    },
+    { key: 'user', header: 'Nhân viên', cell: (log) => log.user ?? 'Hệ thống' },
+    {
+        key: 'event',
+        header: 'Thao tác',
+        cell: (log) => (
+            <Badge variant="outline">{events[log.event] ?? log.event}</Badge>
+        ),
+    },
+    { key: 'description', header: 'Nội dung', cell: (log) => log.description },
+    {
+        key: 'ip_address',
+        header: 'IP',
+        className: 'text-muted-foreground',
+        cell: (log) => log.ip_address,
+    },
+];
+
+function Changes({ log }: { log: Log }) {
+    const fields = Object.keys({
+        ...log.properties?.old,
+        ...log.properties?.new,
+    });
+
+    if (fields.length === 0) {
+        return (
+            <p className="text-xs text-muted-foreground">
+                Không có thay đổi chi tiết.
+            </p>
+        );
+    }
+
+    return (
+        <table className="text-xs">
+            <thead>
+                <tr className="text-muted-foreground">
+                    <th className="pr-6 text-left font-medium">Trường</th>
+                    <th className="pr-6 text-left font-medium">Trước</th>
+                    <th className="text-left font-medium">Sau</th>
+                </tr>
+            </thead>
+            <tbody>
+                {fields.map((field) => (
+                    <tr key={field}>
+                        <td className="pr-6 font-mono">{field}</td>
+                        <td className="pr-6">
+                            {show(log.properties?.old?.[field])}
+                        </td>
+                        <td>{show(log.properties?.new?.[field])}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
+}
+
 export default function ActivityLogIndex({
     logs,
     users,
-    filters,
 }: {
-    logs: Paginated<Log>;
+    logs: TableData<Log>;
     users: { id: number; name: string }[];
-    filters: { user_id: number | null; event: string };
 }) {
-    const [expanded, setExpanded] = useState<number | null>(null);
-
-    const filter = (key: string, value: string) =>
-        router.get(
-            '/activity-log',
-            {
-                user_id: filters.user_id ?? undefined,
-                event: filters.event || undefined,
-                [key]: value === ALL ? undefined : value,
-            },
-            { preserveState: true },
-        );
-
     return (
         <>
             <Head title="Nhật ký hoạt động" />
             <div className="space-y-4 p-4 md:p-6">
                 <PageHeader
                     title="Nhật ký hoạt động"
-                    description="Ai đã làm gì, lúc nào. Bấm vào một dòng để xem giá trị trước và sau khi sửa."
+                    description="Ai đã làm gì, lúc nào. Bấm mũi tên ở đầu dòng để xem giá trị trước và sau khi sửa."
                 />
-                <Card className="gap-0 py-0">
-                    <div className="flex flex-wrap gap-2 p-3">
-                        <Select
-                            value={
-                                filters.user_id ? String(filters.user_id) : ALL
-                            }
-                            onValueChange={(value) => filter('user_id', value)}
-                        >
-                            <SelectTrigger className="w-52">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value={ALL}>
-                                    Tất cả nhân viên
-                                </SelectItem>
-                                {users.map((user) => (
-                                    <SelectItem
-                                        key={user.id}
-                                        value={String(user.id)}
-                                    >
-                                        {user.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={filters.event || ALL}
-                            onValueChange={(value) => filter('event', value)}
-                        >
-                            <SelectTrigger className="w-44">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value={ALL}>
-                                    Tất cả thao tác
-                                </SelectItem>
-                                {Object.entries(events).map(
-                                    ([value, label]) => (
-                                        <SelectItem key={value} value={value}>
-                                            {label}
-                                        </SelectItem>
-                                    ),
-                                )}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-40">
-                                    Thời gian
-                                </TableHead>
-                                <TableHead>Nhân viên</TableHead>
-                                <TableHead>Thao tác</TableHead>
-                                <TableHead>Nội dung</TableHead>
-                                <TableHead>IP</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {logs.data.map((log) => (
-                                <Fragment key={log.id}>
-                                    <TableRow
-                                        className="cursor-pointer"
-                                        onClick={() =>
-                                            setExpanded(
-                                                expanded === log.id
-                                                    ? null
-                                                    : log.id,
-                                            )
-                                        }
-                                    >
-                                        <TableCell className="whitespace-nowrap">
-                                            {formatDateTime(log.created_at)}
-                                        </TableCell>
-                                        <TableCell>
-                                            {log.user ?? 'Hệ thống'}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline">
-                                                {events[log.event] ?? log.event}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>{log.description}</TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                            {log.ip_address}
-                                        </TableCell>
-                                    </TableRow>
-                                    {expanded === log.id && log.properties && (
-                                        <TableRow className="bg-muted/30 hover:bg-muted/30">
-                                            <TableCell colSpan={5}>
-                                                <table className="text-xs">
-                                                    <thead>
-                                                        <tr className="text-muted-foreground">
-                                                            <th className="pr-6 text-left font-medium">
-                                                                Trường
-                                                            </th>
-                                                            <th className="pr-6 text-left font-medium">
-                                                                Trước
-                                                            </th>
-                                                            <th className="text-left font-medium">
-                                                                Sau
-                                                            </th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {Object.keys({
-                                                            ...log.properties
-                                                                .old,
-                                                            ...log.properties
-                                                                .new,
-                                                        }).map((field) => (
-                                                            <tr key={field}>
-                                                                <td className="pr-6 font-mono">
-                                                                    {field}
-                                                                </td>
-                                                                <td className="pr-6">
-                                                                    {show(
-                                                                        log
-                                                                            .properties
-                                                                            ?.old?.[
-                                                                            field
-                                                                        ],
-                                                                    )}
-                                                                </td>
-                                                                <td>
-                                                                    {show(
-                                                                        log
-                                                                            .properties
-                                                                            ?.new?.[
-                                                                            field
-                                                                        ],
-                                                                    )}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </Fragment>
-                            ))}
-                            {logs.data.length === 0 && (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={5}
-                                        className="py-10 text-center text-muted-foreground"
-                                    >
-                                        Chưa có hoạt động nào.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                    <Pagination page={logs} />
-                </Card>
+                <DataTable
+                    tableKey="activity-log"
+                    data={logs}
+                    columns={columns}
+                    searchPlaceholder="Tìm theo nội dung, IP"
+                    filters={[
+                        {
+                            key: 'user',
+                            label: 'Nhân viên',
+                            type: 'select',
+                            options: users.map((user) => ({
+                                value: String(user.id),
+                                label: user.name,
+                            })),
+                        },
+                        {
+                            key: 'event',
+                            label: 'Thao tác',
+                            type: 'select',
+                            options: Object.entries(events).map(
+                                ([value, label]) => ({ value, label }),
+                            ),
+                        },
+                        {
+                            key: 'created_at',
+                            label: 'Thời gian',
+                            type: 'date-range',
+                        },
+                    ]}
+                    expand={(log) => <Changes log={log} />}
+                    exportable
+                    empty="Chưa có hoạt động nào."
+                />
             </div>
         </>
     );

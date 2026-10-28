@@ -53,7 +53,12 @@ Fortify (đăng nhập), Wayfinder (route TS), nwidart/laravel-modules (module).
 
 - Tiếng Việt; số 1.234.567; ngày dd/MM/yyyy; múi giờ Asia/Ho_Chi_Minh.
 - Bố cục tham khảo Sapo (sidebar tối, topbar mỏng, nội dung dạng thẻ) nhưng dùng tên, logo, màu riêng.
-- Trang danh sách dùng DataTable; trang tạo/sửa dùng DocumentForm 2 cột (8/4) — làm ở G1b.
+- Trang danh sách: server dùng `App\Support\DataTable\DataTable::for($query, $request, '<key>')` (->search, ->filterExact, ->filterDateRange, ->filter, ->sortable, ->paginate / ->export); trang React dùng `<DataTable>` (`@/components/data-table`). Query string: `search`, `filter[key]`, `sort=-cot`, `per_page` (20/50/100). Xuất Excel = cùng route + `?export=xlsx`.
+- Thao tác hàng loạt: route `POST <module>/bulk` {action, ids}, kiểm quyền như thao tác đơn lẻ.
+- Excel: `App\Support\Excel\ExcelExport` / `ExcelImport` (OpenSpout, ghi/đọc từng dòng). Nhập: có dòng lỗi thì không nhập dòng nào, báo lỗi theo số dòng; luôn có tệp mẫu.
+- Trang tạo/sửa dùng `DocumentForm` (+ `FormSection`) 2 cột 8/4, thanh lưu cố định, F1/Ctrl+S lưu.
+- Prop của trang không trùng tên prop dùng chung (`auth`, `store`, `branchContext`, `name`, `sidebarOpen`), vì prop trang sẽ đè lên.
+- Ngày nhập tay dạng dd/mm/yyyy (server nhận cả d/m/Y và Y-m-d).
 - Phím tắt giữ như Sapo: F1 lưu đơn, F3 tìm sản phẩm, F4 tìm khách, F6 chiết khấu đơn, F7 phí/chi phí, F9 thêm dịch vụ, F10 bộ lọc.
 
 ## Cách làm việc

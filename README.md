@@ -3,11 +3,11 @@
 Phần mềm quản lý bán hàng đa kênh cho ITSO: sản phẩm, kho, đơn hàng, POS, khách hàng, sổ quỹ, báo cáo.
 Chạy được trên WAMP, aaPanel hoặc hosting PHP thường (giống WordPress), và có sẵn nền để chạy SaaS nhiều cửa hàng.
 
-> Trạng thái: **G1 — khung giao diện và phân quyền**. Đã có đăng nhập, trình cài đặt, nhân viên, vai trò + ma trận quyền, chi nhánh, nhật ký hoạt động. Các module bán hàng làm từ G2 trở đi.
+> Trạng thái: **G1b — bảng dữ liệu và form dùng chung**. Đã có đăng nhập, trình cài đặt, nhân viên, vai trò + ma trận quyền, chi nhánh, nhật ký hoạt động; danh sách có bộ lọc, lưu bộ lọc, chọn cột, thao tác hàng loạt, xuất/nhập Excel. Các module bán hàng làm từ G2 trở đi.
 
 ## Yêu cầu
 
-- PHP **8.3** trở lên, với các extension: `ctype`, `curl`, `fileinfo`, `gd`, `intl`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, `zip`
+- PHP **8.3** trở lên, với các extension: `ctype`, `curl`, `fileinfo`, `gd`, `intl`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, `xmlreader`, `zip`
 - MySQL **8**
 - Để sửa code: Composer 2 và Node.js 22+
 

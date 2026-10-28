@@ -1,23 +1,15 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Pencil, Plus } from 'lucide-react';
 import { ConfirmDelete } from '@/components/app/confirm-delete';
+import { ImportDialog } from '@/components/app/import-dialog';
 import { PageHeader } from '@/components/app/page-header';
-import { Pagination } from '@/components/app/pagination';
-import { SearchInput } from '@/components/app/search-input';
 import { StatusBadge } from '@/components/app/status-badge';
+import { DataTable } from '@/components/data-table';
+import type { BulkAction, Column, TableData } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { useCan } from '@/hooks/use-can';
-import type { Paginated } from '@/types';
+import { formatNumber } from '@/lib/format';
 
 type Branch = {
     id: number;
@@ -30,14 +22,81 @@ type Branch = {
     users_count: number;
 };
 
+const statuses = [
+    { value: 'active', label: 'Đang hoạt động' },
+    { value: 'inactive', label: 'Ngừng hoạt động' },
+];
+
+const columns: Column<Branch>[] = [
+    {
+        key: 'code',
+        header: 'Mã',
+        sort: 'code',
+        fixed: true,
+        className: 'font-medium',
+        cell: (branch) => branch.code,
+    },
+    {
+        key: 'name',
+        header: 'Tên chi nhánh',
+        sort: 'name',
+        cell: (branch) => (
+            <>
+                {branch.name}
+                {branch.is_default && (
+                    <Badge variant="outline" className="ml-2">
+                        Mặc định
+                    </Badge>
+                )}
+            </>
+        ),
+    },
+    { key: 'phone', header: 'Điện thoại', cell: (branch) => branch.phone },
+    {
+        key: 'address',
+        header: 'Địa chỉ',
+        className: 'max-w-64 truncate',
+        cell: (branch) => branch.address,
+    },
+    {
+        key: 'users_count',
+        header: 'Nhân viên',
+        sort: 'users_count',
+        className: 'text-right',
+        cell: (branch) => formatNumber(branch.users_count),
+    },
+    {
+        key: 'status',
+        header: 'Trạng thái',
+        cell: (branch) => <StatusBadge status={branch.status} />,
+    },
+];
+
 export default function BranchesIndex({
     branches,
-    filters,
 }: {
-    branches: Paginated<Branch>;
-    filters: { search: string };
+    branches: TableData<Branch>;
 }) {
     const can = useCan();
+
+    const bulk = (action: string) => (ids: number[]) =>
+        router.post(
+            '/branches/bulk',
+            { action, ids },
+            { preserveScroll: true, preserveState: true },
+        );
+
+    const bulkActions: BulkAction[] = can('branches.update')
+        ? [
+              { label: 'Cho hoạt động', run: bulk('activate') },
+              {
+                  label: 'Ngừng hoạt động',
+                  run: bulk('deactivate'),
+                  confirm:
+                      'Chi nhánh mặc định sẽ được bỏ qua. Nhân viên không chọn được chi nhánh ngừng hoạt động.',
+              },
+          ]
+        : [];
 
     return (
         <>
@@ -56,94 +115,55 @@ export default function BranchesIndex({
                         )
                     }
                 />
-                <Card className="gap-0 py-0">
-                    <div className="p-3">
-                        <SearchInput
-                            value={filters.search}
-                            placeholder="Tìm theo tên, mã chi nhánh"
-                        />
-                    </div>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Mã</TableHead>
-                                <TableHead>Tên chi nhánh</TableHead>
-                                <TableHead>Điện thoại</TableHead>
-                                <TableHead>Địa chỉ</TableHead>
-                                <TableHead className="text-right">
-                                    Nhân viên
-                                </TableHead>
-                                <TableHead>Trạng thái</TableHead>
-                                <TableHead className="w-24" />
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {branches.data.map((branch) => (
-                                <TableRow key={branch.id}>
-                                    <TableCell className="font-medium">
-                                        {branch.code}
-                                    </TableCell>
-                                    <TableCell>
-                                        {branch.name}
-                                        {branch.is_default && (
-                                            <Badge
-                                                variant="outline"
-                                                className="ml-2"
-                                            >
-                                                Mặc định
-                                            </Badge>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>{branch.phone}</TableCell>
-                                    <TableCell className="max-w-64 truncate">
-                                        {branch.address}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {branch.users_count}
-                                    </TableCell>
-                                    <TableCell>
-                                        <StatusBadge status={branch.status} />
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {can('branches.update') && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                asChild
-                                            >
-                                                <Link
-                                                    href={`/branches/${branch.id}/edit`}
-                                                    aria-label="Sửa"
-                                                >
-                                                    <Pencil className="size-4" />
-                                                </Link>
-                                            </Button>
-                                        )}
-                                        {can('branches.delete') &&
-                                            !branch.is_default && (
-                                                <ConfirmDelete
-                                                    url={`/branches/${branch.id}`}
-                                                    title={`Xóa chi nhánh ${branch.name}?`}
-                                                    description="Nhân viên đang gán chi nhánh này sẽ không còn làm việc ở đây."
-                                                />
-                                            )}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {branches.data.length === 0 && (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={7}
-                                        className="py-10 text-center text-muted-foreground"
+                <DataTable
+                    tableKey="branches"
+                    data={branches}
+                    columns={columns}
+                    searchPlaceholder="Tìm theo mã, tên, địa chỉ"
+                    tabs={{ filter: 'status', options: statuses }}
+                    filters={[
+                        {
+                            key: 'status',
+                            label: 'Trạng thái',
+                            type: 'select',
+                            options: statuses,
+                        },
+                    ]}
+                    bulkActions={bulkActions}
+                    exportable
+                    toolbar={
+                        can('branches.create') && (
+                            <ImportDialog
+                                url="/branches/import"
+                                templateUrl="/branches/import/template"
+                                title="Nhập chi nhánh từ Excel"
+                                description="Mã đã có sẽ được cập nhật, mã mới sẽ được thêm. Nếu có dòng lỗi thì không dòng nào được nhập."
+                            />
+                        )
+                    }
+                    empty="Không có chi nhánh nào."
+                    rowActions={(branch) => (
+                        <>
+                            {can('branches.update') && (
+                                <Button variant="ghost" size="icon" asChild>
+                                    <Link
+                                        href={`/branches/${branch.id}/edit`}
+                                        aria-label="Sửa"
                                     >
-                                        Không có chi nhánh nào.
-                                    </TableCell>
-                                </TableRow>
+                                        <Pencil className="size-4" />
+                                    </Link>
+                                </Button>
                             )}
-                        </TableBody>
-                    </Table>
-                    <Pagination page={branches} />
-                </Card>
+                            {can('branches.delete') && !branch.is_default && (
+                                <ConfirmDelete
+                                    url={`/branches/${branch.id}`}
+                                    title={`Xóa chi nhánh ${branch.name}?`}
+                                    description="Nhân viên đang gán chi nhánh này sẽ không còn làm việc ở đây."
+                                />
+                            )}
+                        </>
+                    )}
+                />
             </div>
         </>
     );
