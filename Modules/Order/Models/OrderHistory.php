@@ -30,6 +30,8 @@ class OrderHistory extends Model
         'updated' => 'Sửa đơn hàng',
         'approved' => 'Duyệt đơn hàng',
         'packed' => 'Đóng gói',
+        'shipment_created' => 'Tạo phiếu giao hàng',
+        'shipment_cancelled' => 'Hủy phiếu giao hàng',
         'shipped' => 'Xuất kho',
         'delivered' => 'Giao hàng thành công',
         'delivery_failed' => 'Giao hàng thất bại',

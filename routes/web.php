@@ -37,10 +37,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // now. A phase that builds a page removes its line here.
     $upcoming = [
         'e-invoices' => ['Hóa đơn điện tử', 'G7', 'orders.view'],
-        'shipping' => ['Tổng quan vận chuyển', 'G6', 'orders.view'],
-        'shipments' => ['Quản lý vận đơn', 'G6', 'orders.view'],
-        'cod-reconciliations' => ['Đối soát COD và phí', 'G6', 'orders.view'],
-        'shipping/partners' => ['Kết nối đối tác vận chuyển', 'G6', 'orders.view'],
         'marketplaces' => ['Sàn TMĐT', 'G7', 'orders.view'],
     ];
 

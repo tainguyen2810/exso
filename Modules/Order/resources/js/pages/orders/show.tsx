@@ -34,6 +34,18 @@ import {
     paymentStatuses,
 } from '../../components/statuses';
 import { PaymentDialog } from '../../components/payment-dialog';
+import {
+    ACTIVE_SHIPMENT,
+    ShipmentDialog,
+    codStatuses,
+    shipmentStatuses,
+} from '../../components/shipping';
+import type {
+    Receiver,
+    ShipmentDraft,
+    ShipmentSummary,
+    ShippingOptions,
+} from '../../components/shipping';
 import type {
     PaymentMethodOption,
     QrInfo,
@@ -150,6 +162,7 @@ export default function OrderShow({
     cancelReasons,
     requireCancelReason,
     allowCancelAfterExport,
+    shipping = { enabled: false },
 }: {
     order: Order;
     paymentMethods: PaymentMethodOption[];
@@ -157,9 +170,18 @@ export default function OrderShow({
     cancelReasons: { id: number; name: string }[];
     requireCancelReason: boolean;
     allowCancelAfterExport: boolean;
+    shipping?: ShippingOptions & {
+        shipments?: ShipmentSummary[];
+        defaults?: (Receiver & Partial<ShipmentDraft>) | null;
+    };
 }) {
     const can = useCan();
     const [paying, setPaying] = useState(false);
+    const [shipping0, setShipping0] = useState(false);
+    const shipments = shipping.shipments ?? [];
+    const active = shipments.find((item) =>
+        ACTIVE_SHIPMENT.includes(item.status),
+    );
     const [cancelling, setCancelling] = useState(false);
     const cancelled = order.status === 'cancelled';
     const exported = ['shipped', 'completed'].includes(order.status);
@@ -637,8 +659,38 @@ export default function OrderShow({
                     <Block
                         done={order.status === 'completed'}
                         title={deliveryTitle(order)}
-                        action={<DeliveryActions order={order} step={step} />}
+                        action={
+                            <div className="flex flex-wrap gap-2">
+                                {!active &&
+                                    shipping.defaults &&
+                                    shipping.canCreate &&
+                                    order.delivery_method !== 'pickup' && (
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setShipping0(true)}
+                                        >
+                                            Giao hàng
+                                        </Button>
+                                    )}
+                                {!active?.integrated && (
+                                    <DeliveryActions
+                                        order={order}
+                                        step={step}
+                                    />
+                                )}
+                            </div>
+                        }
                     >
+                        {shipments.length > 0 && (
+                            <div className="mb-4 grid gap-3">
+                                {shipments.map((item) => (
+                                    <ShipmentCard
+                                        key={item.id}
+                                        shipment={item}
+                                    />
+                                ))}
+                            </div>
+                        )}
                         <div className="grid gap-1 text-sm">
                             <span>Hình thức: {order.delivery_label}</span>
                             {order.carrier_name && (
@@ -710,6 +762,15 @@ export default function OrderShow({
                 defaultMethod={defaultMethod}
                 qr={order.qr}
             />
+            {shipping.defaults && (
+                <ShipmentDialog
+                    open={shipping0}
+                    onOpenChange={setShipping0}
+                    orderId={order.id}
+                    options={shipping}
+                    defaults={shipping.defaults}
+                />
+            )}
             <CancelDialog
                 open={cancelling}
                 onOpenChange={setCancelling}
@@ -718,6 +779,119 @@ export default function OrderShow({
                 required={requireCancelReason}
             />
         </>
+    );
+}
+
+/** One shipment of the order, like Sapo's "Đóng gói và giao hàng" block. */
+function ShipmentCard({ shipment }: { shipment: ShipmentSummary }) {
+    const can = useCan();
+    const cancelled = shipment.status === 'cancelled';
+
+    return (
+        <div
+            className={cn(
+                'rounded-md border text-sm',
+                cancelled && 'opacity-70',
+            )}
+        >
+            <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2.5">
+                <Link
+                    href={`/shipments/${shipment.id}`}
+                    className="font-medium text-primary hover:underline"
+                >
+                    {shipment.code}
+                </Link>
+                <StatusPill
+                    statuses={shipmentStatuses}
+                    value={shipment.status}
+                />
+                {shipment.cod_amount > 0 && !cancelled && (
+                    <StatusPill
+                        statuses={codStatuses}
+                        value={shipment.cod_status}
+                    />
+                )}
+                <span className="ml-auto flex flex-wrap gap-2">
+                    {!cancelled && (
+                        <Button variant="outline" size="sm" asChild>
+                            <a
+                                href={`/shipments/${shipment.id}/${shipment.integrated ? 'label' : 'print'}`}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <Printer /> In phiếu giao
+                            </a>
+                        </Button>
+                    )}
+                    {shipment.integrated &&
+                        ACTIVE_SHIPMENT.includes(shipment.status) && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    router.post(
+                                        `/shipments/${shipment.id}/sync`,
+                                        {},
+                                        { preserveScroll: true },
+                                    )
+                                }
+                            >
+                                Cập nhật trạng thái
+                            </Button>
+                        )}
+                    {shipment.status === 'pending' &&
+                        can('shipments.cancel') && (
+                            <ConfirmAction
+                                url={`/shipments/${shipment.id}/cancel`}
+                                title="Hủy giao hàng?"
+                                description={
+                                    shipment.integrated
+                                        ? 'Vận đơn được hủy trên hệ thống của hãng vận chuyển, đơn hàng quay lại bước Chờ đóng gói.'
+                                        : 'Phiếu giao hàng bị hủy, đơn hàng quay lại bước Chờ đóng gói.'
+                                }
+                                confirmLabel="Hủy giao hàng"
+                                destructive
+                                trigger={
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-destructive"
+                                    >
+                                        Hủy giao hàng
+                                    </Button>
+                                }
+                            />
+                        )}
+                </span>
+            </div>
+            <div className="grid gap-x-6 gap-y-1.5 px-4 py-3 sm:grid-cols-2">
+                <Line label="Vận chuyển bởi">{shipment.carrier}</Line>
+                <Line label="Mã vận đơn">{shipment.tracking_code ?? '—'}</Line>
+                {shipment.carrier_status && (
+                    <Line label="Trạng thái đối tác">
+                        {shipment.carrier_status}
+                    </Line>
+                )}
+                {shipment.service_name && (
+                    <Line label="Gói cước">{shipment.service_name}</Line>
+                )}
+                <Line label="Khối lượng">
+                    {formatNumber(shipment.weight)} g
+                </Line>
+                {shipment.size && (
+                    <Line label="Kích thước">{shipment.size}</Line>
+                )}
+                <Line label="Tiền thu hộ COD">
+                    {formatNumber(shipment.cod_amount)}
+                </Line>
+                <Line label="Phí trả ĐTVC">{formatNumber(shipment.fee)}</Line>
+                <Line label="Người trả phí">{shipment.fee_payer}</Line>
+                {shipment.required_note && (
+                    <Line label="Yêu cầu">{shipment.required_note}</Line>
+                )}
+                {shipment.note && <Line label="Ghi chú">{shipment.note}</Line>}
+            </div>
+        </div>
     );
 }
 

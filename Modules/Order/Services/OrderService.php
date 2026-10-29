@@ -305,6 +305,48 @@ class OrderService
     }
 
     /**
+     * A shipment was handed to a partner (G6): the order shows the partner
+     * and tracking code, and an approved order is packed ("Đóng gói").
+     */
+    public function assignShipment(Order $order, string $method, string $carrierName, ?string $trackingCode, string $shipmentCode): void
+    {
+        $this->step($order, 'shipment_created', function (Order $locked) use ($method, $carrierName, $trackingCode): void {
+            if ($locked->status === Order::PENDING) {
+                throw ValidationException::withMessages(['status' => 'Đơn hàng chưa được duyệt.']);
+            }
+
+            if (! in_array($locked->status, [Order::APPROVED, Order::PACKED], true)) {
+                throw ValidationException::withMessages(['status' => 'Chỉ tạo phiếu giao hàng cho đơn đã duyệt, chưa xuất kho.']);
+            }
+
+            $locked->forceFill([
+                'delivery_method' => array_key_exists($method, Order::DELIVERY_METHODS) ? $method : 'external',
+                'carrier_name' => mb_substr($carrierName, 0, 100),
+                'tracking_code' => $trackingCode === null ? null : mb_substr($trackingCode, 0, 100),
+                'status' => Order::PACKED,
+                'packed_at' => $locked->packed_at ?? now(),
+            ])->save();
+        }, implode(' - ', array_filter([$shipmentCode, $carrierName, $trackingCode])));
+    }
+
+    /**
+     * The shipment was cancelled before the goods left ("Hủy đóng gói"):
+     * the order goes back to approved, its goods still held.
+     */
+    public function cancelShipment(Order $order, string $shipmentCode): void
+    {
+        $this->step($order, 'shipment_cancelled', function (Order $locked): void {
+            $changes = ['tracking_code' => null];
+
+            if ($locked->status === Order::PACKED) {
+                $changes += ['status' => Order::APPROVED, 'packed_at' => null];
+            }
+
+            $locked->forceFill($changes)->save();
+        }, $shipmentCode);
+    }
+
+    /**
      * Hủy đơn, at any step before completed. Exported goods come back into
      * stock (when the store allows cancelling after export) and the money
      * received is refunded with the methods it came in.
@@ -790,8 +832,17 @@ class OrderService
             'price_list_id' => $policy['price_list_id'],
             'price_label' => $policy['label'],
             'delivery_method' => array_key_exists($delivery, Order::DELIVERY_METHODS) ? $delivery : 'later',
-            'carrier_name' => $delivery === 'external' ? ($data['carrier_name'] ?? null) : null,
-            'tracking_code' => $delivery === 'external' ? ($data['tracking_code'] ?? null) : null,
+            // A carrier shipment (G6) fills these in; editing the order keeps them.
+            'carrier_name' => match ($delivery) {
+                'external' => $data['carrier_name'] ?? null,
+                'carrier' => $order?->carrier_name,
+                default => null,
+            },
+            'tracking_code' => match ($delivery) {
+                'external' => $data['tracking_code'] ?? null,
+                'carrier' => $order?->tracking_code,
+                default => null,
+            },
             'note' => $data['note'] ?? null,
             'tags' => $data['tags'] ?? null,
             'reference' => $data['reference'] ?? null,

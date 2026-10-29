@@ -46,6 +46,7 @@ export const channels: Record<string, string> = {
 };
 
 export const deliveryMethods: Record<string, string> = {
+    carrier: 'Đẩy qua hãng vận chuyển',
     pickup: 'Khách nhận tại cửa hàng',
     later: 'Giao hàng sau',
     external: 'Đẩy vận chuyển ngoài',

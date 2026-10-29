@@ -23,6 +23,7 @@ use Inertia\Response;
 use Modules\Customer\Http\Controllers\CustomerController;
 use Modules\Customer\Models\Customer;
 use Modules\Inventory\Services\InventoryService;
+use Modules\Order\Contracts\OrderShipping;
 use Modules\Order\Http\Concerns\HandlesOrderInput;
 use Modules\Order\Models\Order;
 use Modules\Order\Models\OrderHistory;
@@ -149,6 +150,16 @@ class OrderController extends Controller
         $user = $request->user();
         $then = $request->input('next_step');
         $then = in_array($then, ['approve', 'export'], true) ? $then : null;
+        $data = $this->orderInput($request);
+        // "Đẩy qua hãng vận chuyển" / a partner of "Đẩy vận chuyển ngoài": the
+        // order is approved, then handed to the partner (G6).
+        $shipment = in_array($data['delivery_method'] ?? 'later', ['carrier', 'external'], true) && is_array($request->input('shipment')) && $request->filled('shipment.carrier_id')
+            ? (array) $request->input('shipment')
+            : null;
+
+        if ($shipment !== null && $then === null) {
+            $then = 'approve';
+        }
 
         if ($then !== null) {
             Gate::authorize('orders.approve');
@@ -158,8 +169,18 @@ class OrderController extends Controller
             Gate::authorize('orders.ship');
         }
 
-        $order = $this->orders->create($this->orderInput($request), $user, $then);
-        $this->toast("Đã tạo đơn hàng {$order->code}.");
+        if ($shipment !== null) {
+            Gate::authorize('shipments.create');
+        }
+
+        $order = $this->orders->create($data, $user, $shipment !== null ? 'approve' : $then);
+        $error = $shipment === null ? null : app(OrderShipping::class)->dispatch($order, $shipment, $user);
+
+        if ($error !== null) {
+            $this->toast("Đã tạo đơn hàng {$order->code} nhưng chưa tạo được phiếu giao hàng: {$error}", 'warning');
+        } else {
+            $this->toast("Đã tạo đơn hàng {$order->code}.");
+        }
 
         return to_route('orders.show', $order);
     }
@@ -259,6 +280,11 @@ class OrderController extends Controller
             'cancelReasons' => OrderReason::query()->where('type', 'cancel')->where('is_active', true)->orderBy('sort')->get(['id', 'name']),
             'requireCancelReason' => (bool) settings('reasons.require_cancel'),
             'allowCancelAfterExport' => (bool) settings('sales.allow_cancel_after_export'),
+            // Đóng gói và giao hàng (G6): shipments, partners and the "Giao hàng" dialog.
+            'shipping' => [
+                ...app(OrderShipping::class)->options($request->user()),
+                ...app(OrderShipping::class)->panel($order, $request->user()),
+            ],
         ]);
     }
 

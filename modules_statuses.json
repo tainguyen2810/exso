@@ -6,5 +6,6 @@
     "Order": true,
     "Cashbook": true,
     "Report": true,
-    "Promotion": true
+    "Promotion": true,
+    "Shipping": true
 }

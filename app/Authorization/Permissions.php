@@ -54,6 +54,21 @@ class Permissions
                 'labels' => ['create' => 'Tạo đơn trả hàng', 'pay' => 'Hoàn tiền'],
             ],
             'pos' => ['label' => 'Bán tại quầy', 'group' => 'Đơn hàng', 'actions' => ['view', 'create'], 'labels' => ['create' => 'Bán hàng']],
+            'shipments' => [
+                'label' => 'Vận đơn', 'group' => 'Vận chuyển',
+                'actions' => ['view', 'create', 'update', 'cancel', 'export'],
+                'labels' => ['create' => 'Tạo vận đơn, đẩy đơn sang đối tác', 'update' => 'Cập nhật trạng thái giao hàng', 'cancel' => 'Hủy giao hàng'],
+            ],
+            'cod_reconciliations' => [
+                'label' => 'Đối soát COD và phí', 'group' => 'Vận chuyển',
+                'actions' => ['view', 'create', 'approve', 'cancel', 'export'],
+                'labels' => ['create' => 'Tạo phiếu đối soát', 'approve' => 'Hoàn thành đối soát (ghi nhận tiền thu hộ)'],
+            ],
+            'carriers' => [
+                'label' => 'Đối tác vận chuyển', 'group' => 'Vận chuyển',
+                'actions' => ['view', 'create', 'update', 'delete'],
+                'labels' => ['update' => 'Kết nối, cấu hình đối tác'],
+            ],
             'products' => [
                 'label' => 'Sản phẩm', 'group' => 'Sản phẩm',
                 'actions' => ['view', 'create', 'update', 'delete', 'export', 'import'],
@@ -171,6 +186,7 @@ class Permissions
                 'orders.view', 'orders.view_all', 'orders.create', 'orders.approve', 'orders.ship', 'orders.pay',
                 'returns.view', 'returns.create', 'returns.pay',
                 'customers.view', 'customers.view_all', 'customers.create', 'products.view',
+                'shipments.view', 'shipments.create', 'shipments.update', 'shipments.cancel', 'carriers.view',
             ],
             'Nhân viên kho' => [
                 'dashboard.view', 'products.view', 'products.create', 'products.update', 'products.export', 'products.import',
@@ -178,12 +194,15 @@ class Permissions
                 'suppliers.view', 'suppliers.create', 'suppliers.update',
                 'purchases.view', 'purchases.create', 'purchases.update', 'purchases.approve',
                 'orders.view', 'orders.view_all', 'orders.ship',
+                'shipments.view', 'shipments.create', 'shipments.update', 'shipments.cancel', 'carriers.view',
             ],
             'Kế toán' => [
                 'dashboard.view', 'cashbook.view', 'cashbook.create', 'cashbook.update', 'cashbook.approve', 'cashbook.cancel', 'cashbook.export',
                 'reports.view', 'reports.export', 'orders.view', 'orders.view_all', 'orders.export', 'returns.view', 'returns.export',
                 'customers.view', 'customers.view_all', 'customers.export',
                 'suppliers.view', 'suppliers.export', 'purchases.view', 'purchases.pay', 'purchases.export',
+                'shipments.view', 'shipments.export', 'cod_reconciliations.view', 'cod_reconciliations.create',
+                'cod_reconciliations.approve', 'cod_reconciliations.cancel', 'cod_reconciliations.export', 'carriers.view',
             ],
         ];
     }

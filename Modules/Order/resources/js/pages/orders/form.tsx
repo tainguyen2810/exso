@@ -48,6 +48,13 @@ import type {
     PromotionChoice,
     PromotionRequest,
 } from '../../components/promotions';
+import {
+    ShipmentFields,
+    emptyShipment,
+    shipmentPayload,
+    splitAddress,
+} from '../../components/shipping';
+import type { ShipmentDraft, ShippingOptions } from '../../components/shipping';
 import { lineTotal, orderTotals } from '../../components/totals';
 
 type Option = { id: number; name: string };
@@ -109,11 +116,18 @@ let keySeed = 0;
 const nextKey = () => `line-${++keySeed}`;
 
 const deliveryOptions = [
-    { value: 'carrier', label: 'Đẩy qua hãng vận chuyển', soon: true },
+    { value: 'carrier', label: 'Đẩy qua hãng vận chuyển' },
     { value: 'external', label: 'Đẩy vận chuyển ngoài' },
     { value: 'pickup', label: 'Nhận tại cửa hàng' },
     { value: 'later', label: 'Giao hàng sau' },
 ];
+
+/** Street, ward, district, province as one address line. */
+const joinAddress = (parts: (string | null | undefined)[]) =>
+    parts
+        .map((part) => part?.trim())
+        .filter(Boolean)
+        .join(', ');
 
 /**
  * "Tạo đơn hàng" like Sapo: customer (F4), products (F3, quantity gets the
@@ -132,6 +146,7 @@ export default function OrderForm({
     canEditPrice,
     defaultOnlineMethod,
     promotionSettings,
+    shipping = { enabled: false },
 }: {
     order: Draft | null;
     presetCustomer?: CustomerOption | null;
@@ -144,9 +159,16 @@ export default function OrderForm({
     canEditPrice: boolean;
     defaultOnlineMethod: number | string | null;
     promotionSettings: PromotionSettings;
+    shipping?: ShippingOptions;
 }) {
     const can = useCan();
     const editing = order?.id != null;
+    // The shipment is made with a new order; later it is made on the order page.
+    const shipsNow = !editing && shipping.enabled && can('shipments.create');
+    const [shipment, setShipment] = useState<ShipmentDraft>(() =>
+        emptyShipment(shipping, 0),
+    );
+    const [codTouched, setCodTouched] = useState(false);
     const search = useRef<SearchHandle>(null);
     const shippingInput = useRef<HTMLInputElement>(null);
     const quantityInputs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -266,6 +288,17 @@ export default function OrderForm({
     const paidNow = paying
         ? data.payments.reduce((sum, payment) => sum + payment.amount, 0)
         : 0;
+    const shipmentValue: ShipmentDraft = codTouched
+        ? shipment
+        : { ...shipment, cod_amount: Math.max(0, remaining - paidNow) };
+    const shipmentMode =
+        data.delivery_method === 'carrier' ||
+        (data.delivery_method === 'external' &&
+            (shipping.partners ?? []).length > 0)
+            ? (data.delivery_method as 'carrier' | 'external')
+            : null;
+    const sendsShipment =
+        shipsNow && shipmentMode !== null && shipmentValue.carrier_id !== null;
 
     // Payment starts at what is left to pay and follows the total until the
     // user types another amount (Sapo pre-fills the same way).
@@ -413,6 +446,15 @@ export default function OrderForm({
     }, [data.delivery_method]);
 
     const save = (then: string | null) => {
+        const receiver = {
+            receiver_name: data.receiver_name,
+            receiver_phone: data.receiver_phone,
+            address: data.shipping_address,
+        };
+        const partner = (shipping.partners ?? []).find(
+            (item) => item.id === shipmentValue.carrier_id,
+        );
+
         form.transform((values) => ({
             branch_id: values.branch_id,
             customer_id: values.customer?.id ?? null,
@@ -422,18 +464,27 @@ export default function OrderForm({
             delivery_method: values.delivery_method,
             carrier_name:
                 values.delivery_method === 'external'
-                    ? values.carrier_name
+                    ? (partner?.name ?? values.carrier_name)
                     : null,
             tracking_code:
                 values.delivery_method === 'external'
-                    ? values.tracking_code
+                    ? sendsShipment
+                        ? shipmentValue.tracking_code
+                        : values.tracking_code
                     : null,
             receiver_name: values.receiver_name,
             receiver_phone: values.receiver_phone,
             shipping_address:
                 values.delivery_method === 'pickup'
                     ? null
-                    : values.shipping_address,
+                    : values.delivery_method === 'carrier'
+                      ? joinAddress([
+                            values.shipping_address,
+                            shipmentValue.ward,
+                            shipmentValue.district,
+                            shipmentValue.province,
+                        ])
+                      : values.shipping_address,
             shipping_fee:
                 values.delivery_method === 'pickup' ? 0 : values.shipping_fee,
             discount: values.discount,
@@ -461,6 +512,10 @@ export default function OrderForm({
             promotion_ids: values.promotion_ids,
             coupon_code: values.coupon_code || null,
             gifts: values.gifts,
+            shipment:
+                sendsShipment && shipmentMode
+                    ? shipmentPayload(shipmentMode, shipmentValue, receiver)
+                    : null,
         }));
 
         if (editing && order?.id) {
@@ -1276,28 +1331,52 @@ export default function OrderForm({
                             <button
                                 key={option.value}
                                 type="button"
-                                disabled={option.soon}
-                                onClick={() =>
+                                disabled={
+                                    option.value === 'carrier' &&
+                                    !shipping.enabled
+                                }
+                                onClick={() => {
+                                    // A carrier needs ward, district and
+                                    // province apart from the street.
+                                    if (
+                                        option.value === 'carrier' &&
+                                        !shipment.district &&
+                                        !shipment.province
+                                    ) {
+                                        const parts = splitAddress(
+                                            data.shipping_address,
+                                        );
+                                        setShipment({
+                                            ...shipment,
+                                            ward: parts.ward,
+                                            district: parts.district,
+                                            province: parts.province,
+                                        });
+                                        form.setData((previous) => ({
+                                            ...previous,
+                                            delivery_method: 'carrier',
+                                            shipping_address: parts.street,
+                                        }));
+
+                                        return;
+                                    }
+
                                     form.setData(
                                         'delivery_method',
                                         option.value,
-                                    )
-                                }
+                                    );
+                                }}
                                 className={cn(
                                     'rounded-md border px-3 py-2.5 text-left text-sm',
                                     data.delivery_method === option.value
                                         ? 'border-primary bg-accent font-medium text-primary'
                                         : 'hover:border-primary/50',
-                                    option.soon &&
+                                    option.value === 'carrier' &&
+                                        !shipping.enabled &&
                                         'cursor-not-allowed opacity-50',
                                 )}
                             >
                                 {option.label}
-                                {option.soon && (
-                                    <span className="block text-xs font-normal">
-                                        Sắp có
-                                    </span>
-                                )}
                             </button>
                         ))}
                     </div>
@@ -1338,7 +1417,11 @@ export default function OrderForm({
                                 />
                             </Field>
                             <Field
-                                label="Địa chỉ giao hàng"
+                                label={
+                                    data.delivery_method === 'carrier'
+                                        ? 'Địa chỉ (số nhà, đường)'
+                                        : 'Địa chỉ giao hàng'
+                                }
                                 error={errors.shipping_address}
                                 className="sm:col-span-2"
                             >
@@ -1352,39 +1435,73 @@ export default function OrderForm({
                                     }
                                 />
                             </Field>
-                            {data.delivery_method === 'external' && (
-                                <>
-                                    <Field
-                                        label="Đối tác vận chuyển"
-                                        error={errors.carrier_name}
-                                    >
-                                        <Input
-                                            value={data.carrier_name}
-                                            placeholder="VD: Viettel Post"
-                                            onChange={(event) =>
-                                                form.setData(
-                                                    'carrier_name',
-                                                    event.target.value,
-                                                )
+                            {shipsNow && shipmentMode !== null && (
+                                <div className="sm:col-span-2">
+                                    <ShipmentFields
+                                        mode={shipmentMode}
+                                        options={shipping}
+                                        value={shipmentValue}
+                                        onChange={(next) => {
+                                            if (
+                                                next.cod_amount !==
+                                                shipmentValue.cod_amount
+                                            ) {
+                                                setCodTouched(true);
                                             }
-                                        />
-                                    </Field>
-                                    <Field
-                                        label="Mã vận đơn"
-                                        error={errors.tracking_code}
-                                    >
-                                        <Input
-                                            value={data.tracking_code}
-                                            onChange={(event) =>
-                                                form.setData(
-                                                    'tracking_code',
-                                                    event.target.value,
-                                                )
-                                            }
-                                        />
-                                    </Field>
-                                </>
+
+                                            setShipment(next);
+                                        }}
+                                        receiver={{
+                                            receiver_name: data.receiver_name,
+                                            receiver_phone: data.receiver_phone,
+                                            address: data.shipping_address,
+                                        }}
+                                        scope={{ branch_id: data.branch_id }}
+                                        errors={errors}
+                                    />
+                                </div>
                             )}
+                            {data.delivery_method === 'carrier' &&
+                                !shipsNow && (
+                                    <p className="text-sm text-muted-foreground sm:col-span-2">
+                                        Tạo vận đơn ở trang chi tiết đơn hàng
+                                        (Giao hàng).
+                                    </p>
+                                )}
+                            {data.delivery_method === 'external' &&
+                                !(shipsNow && shipmentMode !== null) && (
+                                    <>
+                                        <Field
+                                            label="Đối tác vận chuyển"
+                                            error={errors.carrier_name}
+                                        >
+                                            <Input
+                                                value={data.carrier_name}
+                                                placeholder="VD: Viettel Post"
+                                                onChange={(event) =>
+                                                    form.setData(
+                                                        'carrier_name',
+                                                        event.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </Field>
+                                        <Field
+                                            label="Mã vận đơn"
+                                            error={errors.tracking_code}
+                                        >
+                                            <Input
+                                                value={data.tracking_code}
+                                                onChange={(event) =>
+                                                    form.setData(
+                                                        'tracking_code',
+                                                        event.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </Field>
+                                    </>
+                                )}
                         </div>
                     )}
                 </FormSection>
