@@ -17,7 +17,6 @@ use Modules\Marketplace\Models\MarketplaceOrder;
 use Modules\Marketplace\Models\MarketplaceShop;
 use Modules\Order\Models\Order;
 use Modules\Order\Services\OrderService;
-use Modules\Product\Models\ProductVariant;
 use Throwable;
 
 /**
@@ -398,14 +397,15 @@ class MarketplaceOrderService
      */
     public function retryUnlinked(MarketplaceShop $shop): void
     {
-        $ids = MarketplaceOrder::query()->where('shop_id', $shop->id)->where('sync_status', MarketplaceOrder::UNLINKED)->limit(200)->pluck('external_id')->all();
+        $ids = MarketplaceOrder::query()->where('shop_id', $shop->id)->where('sync_status', MarketplaceOrder::UNLINKED)->limit(200)->get(['external_id'])
+            ->map(fn (MarketplaceOrder $order): string => $order->external_id)->values()->all();
 
         if ($ids === []) {
             return;
         }
 
         try {
-            $this->syncIds($shop, $ids);
+            $this->syncIds($shop, array_values($ids));
         } catch (Throwable $exception) {
             report($exception);
         }

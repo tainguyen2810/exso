@@ -51,7 +51,7 @@ class MarketplaceServiceProvider extends ServiceProvider
 
         // "Có thể bán" changed: push it to the shops selling these products.
         Event::listen(StockChanged::class, fn (StockChanged $event) => app(MarketplaceStockService::class)->changed(
-            array_values(array_map(fn (StockMovement $movement): int => $movement->variant_id, $event->movements)),
+            array_map(fn (StockMovement $movement): int => $movement->variant_id, $event->movements),
         ));
         Event::listen(ReservationChanged::class, fn (ReservationChanged $event) => app(MarketplaceStockService::class)->changed($event->variantIds));
 

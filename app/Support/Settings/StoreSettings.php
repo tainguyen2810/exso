@@ -66,6 +66,8 @@ class StoreSettings
         'shipping.auto_receive_return' => false,
         'shipping.late_pick_days' => 2,
         'shipping.late_delivery_days' => 5,
+        // Issue the e-invoice by itself when an order is completed.
+        'einvoice.auto_issue' => false,
     ];
 
     /** On/off options on the "Cấu hình bán hàng" page, grouped like Sapo. */

@@ -357,7 +357,7 @@ class ShopController extends Controller
     {
         $drivers = app(MarketplaceManager::class);
 
-        return array_values(array_map(fn (string $key): array => ['value' => $key, 'label' => $drivers->label($key)], array_keys($drivers->drivers())));
+        return array_map(fn (string $key): array => ['value' => $key, 'label' => $drivers->label($key)], array_keys($drivers->drivers()));
     }
 
     /**
@@ -365,8 +365,8 @@ class ShopController extends Controller
      */
     public static function branches(User $user): array
     {
-        return Branch::query()->whereIn('id', $user->branchIds())->orderByDesc('is_default')->orderBy('name')->get(['id', 'name'])
-            ->map(fn (Branch $branch): array => ['id' => $branch->id, 'name' => $branch->name])->all();
+        return array_values(Branch::query()->whereIn('id', $user->branchIds())->orderByDesc('is_default')->orderBy('name')->get(['id', 'name'])
+            ->map(fn (Branch $branch): array => ['id' => $branch->id, 'name' => $branch->name])->all());
     }
 
     public static function authorizeShop(Request $request, MarketplaceShop $shop): void

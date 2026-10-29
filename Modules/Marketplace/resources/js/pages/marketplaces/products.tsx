@@ -27,7 +27,12 @@ type Row = {
     image_url: string | null;
     price: number;
     stock: number;
-    variant: { id: number; name: string; sku: string; product_id: number } | null;
+    variant: {
+        id: number;
+        name: string;
+        sku: string;
+        product_id: number;
+    } | null;
     pushed_stock: number | null;
     pushed_at: string | null;
     push_error: string | null;
@@ -51,7 +56,8 @@ export default function MarketplaceProducts({
     const can = useCan();
     const editable = can('marketplaces.update');
     const [linking, setLinking] = useState<Row | null>(null);
-    const post = (url: string) => router.post(url, {}, { preserveScroll: true });
+    const post = (url: string) =>
+        router.post(url, {}, { preserveScroll: true });
 
     const columns: Column<Row>[] = [
         {
@@ -62,15 +68,22 @@ export default function MarketplaceProducts({
             cell: (row) => (
                 <div className="flex min-w-72 items-center gap-3">
                     {row.image_url ? (
-                        <img src={row.image_url} alt="" className="size-10 rounded border object-cover" />
+                        <img
+                            src={row.image_url}
+                            alt=""
+                            className="size-10 rounded border object-cover"
+                        />
                     ) : (
                         <div className="size-10 rounded border bg-muted" />
                     )}
                     <div>
                         <div className="text-primary">{row.name}</div>
-                        {row.model_name && <div className="text-sm">{row.model_name}</div>}
+                        {row.model_name && (
+                            <div className="text-sm">{row.model_name}</div>
+                        )}
                         <div className="text-xs text-muted-foreground">
-                            ID: {row.model_id !== '0' ? row.model_id : row.item_id}
+                            ID:{' '}
+                            {row.model_id !== '0' ? row.model_id : row.item_id}
                             {row.sku ? ` · SKU: ${row.sku}` : ''}
                         </div>
                     </div>
@@ -89,7 +102,11 @@ export default function MarketplaceProducts({
             key: 'link',
             header: 'Trạng thái liên kết',
             cell: (row) =>
-                row.variant ? <Pill tone="success">Liên kết thành công</Pill> : <Pill tone="warning">Chưa liên kết</Pill>,
+                row.variant ? (
+                    <Pill tone="success">Liên kết thành công</Pill>
+                ) : (
+                    <Pill tone="warning">Chưa liên kết</Pill>
+                ),
         },
         {
             key: 'variant',
@@ -97,10 +114,15 @@ export default function MarketplaceProducts({
             cell: (row) =>
                 row.variant ? (
                     <div>
-                        <Link href={`/products/${row.variant.product_id}/edit`} className="text-primary hover:underline">
+                        <Link
+                            href={`/products/${row.variant.product_id}/edit`}
+                            className="text-primary hover:underline"
+                        >
                             {row.variant.name}
                         </Link>
-                        <div className="text-xs text-muted-foreground">{row.variant.sku}</div>
+                        <div className="text-xs text-muted-foreground">
+                            {row.variant.sku}
+                        </div>
                     </div>
                 ) : (
                     '—'
@@ -115,9 +137,13 @@ export default function MarketplaceProducts({
                 <div>
                     <div>{formatNumber(row.stock)}</div>
                     {row.push_error ? (
-                        <div className="max-w-56 text-xs text-destructive">{row.push_error}</div>
+                        <div className="max-w-56 text-xs text-destructive">
+                            {row.push_error}
+                        </div>
                     ) : row.pushed_at ? (
-                        <div className="text-xs text-muted-foreground">Đẩy lúc {formatDateTime(row.pushed_at)}</div>
+                        <div className="text-xs text-muted-foreground">
+                            Đẩy lúc {formatDateTime(row.pushed_at)}
+                        </div>
                     ) : null}
                 </div>
             ),
@@ -134,7 +160,14 @@ export default function MarketplaceProducts({
                     columns={columns}
                     searchPlaceholder="Tìm theo tên, SKU, ID sản phẩm sàn hoặc sản phẩm liên kết"
                     tabs={{ filter: 'link', options: LINK_TABS }}
-                    filters={[{ key: 'shop_id', label: 'Gian hàng', type: 'select', options: toSelectOptions(shops) }]}
+                    filters={[
+                        {
+                            key: 'shop_id',
+                            label: 'Gian hàng',
+                            type: 'select',
+                            options: toSelectOptions(shops),
+                        },
+                    ]}
                     rowActions={
                         editable
                             ? (row) =>
@@ -145,13 +178,21 @@ export default function MarketplaceProducts({
                                           title="Hủy liên kết"
                                           className="text-destructive"
                                           onClick={() =>
-                                              router.delete(`/marketplaces/products/${row.id}/link`, { preserveScroll: true })
+                                              router.delete(
+                                                  `/marketplaces/products/${row.id}/link`,
+                                                  { preserveScroll: true },
+                                              )
                                           }
                                       >
                                           <Link2Off className="size-4" />
                                       </Button>
                                   ) : (
-                                      <Button variant="ghost" size="sm" title="Liên kết" onClick={() => setLinking(row)}>
+                                      <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          title="Liên kết"
+                                          onClick={() => setLinking(row)}
+                                      >
                                           <Link2 className="size-4" />
                                       </Button>
                                   )
@@ -160,13 +201,29 @@ export default function MarketplaceProducts({
                     actions={
                         editable && (
                             <>
-                                <Button variant="outline" onClick={() => post('/marketplaces/products/push-stock')}>
+                                <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                        post(
+                                            '/marketplaces/products/push-stock',
+                                        )
+                                    }
+                                >
                                     <UploadCloud /> Đồng bộ tồn kho
                                 </Button>
-                                <Button variant="outline" onClick={() => post('/marketplaces/products/auto-link')}>
+                                <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                        post('/marketplaces/products/auto-link')
+                                    }
+                                >
                                     <Zap /> Liên kết nhanh
                                 </Button>
-                                <Button onClick={() => post('/marketplaces/products/fetch')}>
+                                <Button
+                                    onClick={() =>
+                                        post('/marketplaces/products/fetch')
+                                    }
+                                >
                                     <RefreshCw /> Cập nhật dữ liệu sản phẩm
                                 </Button>
                             </>
@@ -175,12 +232,16 @@ export default function MarketplaceProducts({
                     empty="Chưa có sản phẩm sàn. Bấm “Cập nhật dữ liệu sản phẩm” để tải sản phẩm từ gian hàng."
                 />
             </div>
-            <Dialog open={linking !== null} onOpenChange={(open) => !open && setLinking(null)}>
+            <Dialog
+                open={linking !== null}
+                onOpenChange={(open) => !open && setLinking(null)}
+            >
                 <DialogContent>
                     <DialogTitle>Liên kết sản phẩm</DialogTitle>
                     <DialogDescription>
                         {linking?.name}
-                        {linking?.model_name ? ` - ${linking.model_name}` : ''}: chọn phiên bản trên EXSO. Đơn sàn của sản phẩm này sẽ
+                        {linking?.model_name ? ` - ${linking.model_name}` : ''}:
+                        chọn phiên bản trên EXSO. Đơn sàn của sản phẩm này sẽ
                         trừ kho phiên bản đó, tồn “Có thể bán” được đẩy lên sàn.
                     </DialogDescription>
                     <VariantPicker
@@ -192,7 +253,10 @@ export default function MarketplaceProducts({
                                 router.put(
                                     `/marketplaces/products/${linking.id}/link`,
                                     { variant_id: variant.id },
-                                    { preserveScroll: true, onSuccess: () => setLinking(null) },
+                                    {
+                                        preserveScroll: true,
+                                        onSuccess: () => setLinking(null),
+                                    },
                                 );
                             }
                         }}

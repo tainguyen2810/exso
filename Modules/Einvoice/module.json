@@ -1,0 +1,9 @@
+{
+    "name": "Einvoice",
+    "alias": "einvoice",
+    "description": "Hóa đơn điện tử: kết nối nhà cung cấp HĐĐT (Viettel S-Invoice), tạo hóa đơn từ đơn hàng, phát hành, hủy, lập hóa đơn điều chỉnh.",
+    "keywords": [],
+    "priority": 95,
+    "providers": ["Modules\\Einvoice\\Providers\\EinvoiceServiceProvider"],
+    "files": []
+}

@@ -7,7 +7,11 @@ import type { Column, TableData } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
 import { useCan } from '@/hooks/use-can';
 import { formatDateTime, formatNumber } from '@/lib/format';
-import { orderStates, syncStatuses, toOptions } from '../../components/marketplace';
+import {
+    orderStates,
+    syncStatuses,
+    toOptions,
+} from '../../components/marketplace';
 
 type Row = {
     id: number;
@@ -46,7 +50,11 @@ export default function MarketplaceOrders({
             header: 'Mã đơn sàn',
             fixed: true,
             className: 'whitespace-nowrap',
-            cell: (row) => <span className="font-medium text-primary">{row.external_id}</span>,
+            cell: (row) => (
+                <span className="font-medium text-primary">
+                    {row.external_id}
+                </span>
+            ),
         },
         { key: 'shop', header: 'Gian hàng', cell: (row) => row.shop },
         {
@@ -63,7 +71,9 @@ export default function MarketplaceOrders({
                 <div>
                     <StatusPill statuses={orderStates} value={row.state} />
                     {row.platform_status_label && (
-                        <div className="mt-1 text-xs text-muted-foreground">{row.platform_status_label}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                            {row.platform_status_label}
+                        </div>
                     )}
                 </div>
             ),
@@ -74,7 +84,10 @@ export default function MarketplaceOrders({
             className: 'whitespace-nowrap',
             cell: (row) =>
                 row.order_id ? (
-                    <Link href={`/orders/${row.order_id}`} className="text-primary hover:underline">
+                    <Link
+                        href={`/orders/${row.order_id}`}
+                        className="text-primary hover:underline"
+                    >
                         {row.order_code}
                     </Link>
                 ) : (
@@ -86,8 +99,15 @@ export default function MarketplaceOrders({
             header: 'Đồng bộ',
             cell: (row) => (
                 <div className="max-w-72">
-                    <StatusPill statuses={syncStatuses} value={row.sync_status} />
-                    {row.error && <div className="mt-1 text-xs text-destructive">{row.error}</div>}
+                    <StatusPill
+                        statuses={syncStatuses}
+                        value={row.sync_status}
+                    />
+                    {row.error && (
+                        <div className="mt-1 text-xs text-destructive">
+                            {row.error}
+                        </div>
+                    )}
                 </div>
             ),
         },
@@ -105,7 +125,11 @@ export default function MarketplaceOrders({
             cell: (row) => (
                 <div>
                     <div>{row.carrier ?? '—'}</div>
-                    {row.tracking_code && <div className="text-xs text-muted-foreground">{row.tracking_code}</div>}
+                    {row.tracking_code && (
+                        <div className="text-xs text-muted-foreground">
+                            {row.tracking_code}
+                        </div>
+                    )}
                 </div>
             ),
         },
@@ -130,19 +154,40 @@ export default function MarketplaceOrders({
                     searchPlaceholder="Tìm theo mã đơn sàn, mã đơn EXSO, người mua, mã vận đơn"
                     tabs={{ filter: 'state', options: toOptions(orderStates) }}
                     filters={[
-                        { key: 'placed_at', label: 'Ngày tạo', type: 'date-range' },
-                        { key: 'shop_id', label: 'Gian hàng', type: 'select', options: toSelectOptions(shops) },
-                        { key: 'sync_status', label: 'Trạng thái đồng bộ', type: 'select', options: toOptions(syncStatuses) },
+                        {
+                            key: 'placed_at',
+                            label: 'Ngày tạo',
+                            type: 'date-range',
+                        },
+                        {
+                            key: 'shop_id',
+                            label: 'Gian hàng',
+                            type: 'select',
+                            options: toSelectOptions(shops),
+                        },
+                        {
+                            key: 'sync_status',
+                            label: 'Trạng thái đồng bộ',
+                            type: 'select',
+                            options: toOptions(syncStatuses),
+                        },
                     ]}
                     rowActions={
                         editable
                             ? (row) =>
-                                  row.sync_status !== 'synced' || !row.order_id ? (
+                                  row.sync_status !== 'synced' ||
+                                  !row.order_id ? (
                                       <Button
                                           variant="ghost"
                                           size="sm"
                                           title="Đồng bộ lại đơn này"
-                                          onClick={() => router.post(`/marketplaces/orders/${row.id}/sync`, {}, { preserveScroll: true })}
+                                          onClick={() =>
+                                              router.post(
+                                                  `/marketplaces/orders/${row.id}/sync`,
+                                                  {},
+                                                  { preserveScroll: true },
+                                              )
+                                          }
                                       >
                                           <RefreshCw className="size-4" />
                                       </Button>
@@ -151,7 +196,15 @@ export default function MarketplaceOrders({
                     }
                     actions={
                         editable && (
-                            <Button onClick={() => router.post('/marketplaces/orders/pull', {}, { preserveScroll: true })}>
+                            <Button
+                                onClick={() =>
+                                    router.post(
+                                        '/marketplaces/orders/pull',
+                                        {},
+                                        { preserveScroll: true },
+                                    )
+                                }
+                            >
                                 <RefreshCw /> Cập nhật đơn hàng
                             </Button>
                         )

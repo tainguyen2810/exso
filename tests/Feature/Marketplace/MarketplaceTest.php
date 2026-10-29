@@ -1,12 +1,14 @@
 <?php
 
+use App\Models\Branch;
 use App\Models\PaymentMethod;
 use App\Support\Settings\StoreDefaults;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Modules\Inventory\Models\StockMovement;
+use Modules\Marketplace\Jobs\PullMarketplaceOrders;
 use Modules\Marketplace\Models\MarketplaceListing;
 use Modules\Marketplace\Models\MarketplaceOrder;
 use Modules\Marketplace\Models\MarketplaceShop;
@@ -66,7 +68,7 @@ function shopeeShop(array $attributes = []): MarketplaceShop
     $shop->credentials = ['partner_id' => '2001234', 'partner_key' => SHOPEE_KEY, 'access_token' => 'access-1', 'refresh_token' => 'refresh-1'];
     $shop->token_expires_at = now()->addHours(3);
     $shop->refresh_expires_at = now()->addDays(20);
-    $shop->webhook_token = str_repeat('b', 48);
+    $shop->webhook_token = Str::random(48);
     $shop->save();
 
     return $shop;
@@ -299,7 +301,7 @@ test('the access token is refreshed when it expires; a refused refresh marks the
     $shop->token_expires_at = now()->subMinute();
     $shop->save();
     $this->shopee['refresh'] = false;
-    \Modules\Marketplace\Jobs\PullMarketplaceOrders::dispatch((int) $shop->tenant_id, $shop->id);
+    PullMarketplaceOrders::dispatch((int) $shop->tenant_id, $shop->id);
 
     expect($shop->refresh()->status)->toBe(MarketplaceShop::EXPIRED)
         ->and($shop->last_error)->toContain('cấp quyền lại');
@@ -313,7 +315,7 @@ test('marketplace pages need the permission and only show shops of the user\'s b
         $this->get($page)->assertOk();
     }
 
-    $other = \App\Models\Branch::query()->create(['code' => 'CN02', 'name' => 'Chi nhánh 2']);
+    $other = Branch::query()->create(['code' => 'CN02', 'name' => 'Chi nhánh 2']);
     $hidden = shopeeShop(['external_id' => '990002', 'name' => 'Gian hàng chi nhánh 2', 'branch_id' => $other->id]);
     $cashier = staffWithRole('Thu ngân');
     $this->actingAs($cashier)->get('/marketplaces')->assertForbidden();

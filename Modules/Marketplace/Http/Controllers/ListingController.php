@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\DataTable\DataTable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -118,7 +119,7 @@ class ListingController extends Controller
             'variant_id' => ['required', 'integer', Rule::exists('product_variants', 'id')->where('tenant_id', tenancy()->id())->whereNull('deleted_at')],
         ]);
 
-        $this->listings->link($listing, ProductVariant::query()->with('product')->findOrFail($data['variant_id']));
+        $this->listings->link($listing, ProductVariant::query()->with('product')->findOrFail((int) $data['variant_id']));
         $this->afterLinking($listing->shop);
         $this->toast("Đã liên kết {$listing->fullName()}.");
 
@@ -161,15 +162,16 @@ class ListingController extends Controller
         }
 
         PushMarketplaceStock::dispatch((int) $shop->tenant_id, $shop->id);
-        $waiting = MarketplaceOrder::query()->where('shop_id', $shop->id)->where('sync_status', MarketplaceOrder::UNLINKED)->limit(50)->pluck('external_id')->all();
+        $waiting = MarketplaceOrder::query()->where('shop_id', $shop->id)->where('sync_status', MarketplaceOrder::UNLINKED)->limit(50)->get(['external_id'])
+            ->map(fn (MarketplaceOrder $order): string => $order->external_id)->all();
 
         if ($waiting !== []) {
-            SyncMarketplaceOrders::dispatch((int) $shop->tenant_id, $shop->id, $waiting);
+            SyncMarketplaceOrders::dispatch((int) $shop->tenant_id, $shop->id, array_values($waiting));
         }
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, MarketplaceShop>
+     * @return Collection<int, MarketplaceShop>
      */
     protected function activeShops(Request $request)
     {

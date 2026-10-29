@@ -366,7 +366,10 @@ export default function OrderShow({
                                 </CardHeader>
                                 <CardContent className="grid gap-2 px-5 py-4 text-sm">
                                     {panel.lines.map((line) => (
-                                        <Line key={line.label} label={line.label}>
+                                        <Line
+                                            key={line.label}
+                                            label={line.label}
+                                        >
                                             {line.href ? (
                                                 <Link
                                                     href={line.href}

@@ -3,6 +3,7 @@ import {
     BarChart3,
     Building2,
     FileSpreadsheet,
+    FileText,
     FolderTree,
     Gift,
     History,
@@ -435,6 +436,15 @@ export const configEntries: ConfigEntry[] = [
             'Khối lượng, kích thước mặc định, yêu cầu khi giao và tự động theo hãng vận chuyển.',
         href: '/shipping/settings',
         icon: Truck,
+        permission: 'settings.view',
+        group: 'Thiết lập bán hàng',
+    },
+    {
+        title: 'Hóa đơn điện tử',
+        description:
+            'Kết nối nhà cung cấp hóa đơn điện tử, mẫu số, ký hiệu và tự động xuất hóa đơn.',
+        href: '/e-invoices/settings',
+        icon: FileText,
         permission: 'settings.view',
         group: 'Thiết lập bán hàng',
     },

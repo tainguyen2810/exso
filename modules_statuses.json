@@ -8,5 +8,6 @@
     "Report": true,
     "Promotion": true,
     "Shipping": true,
-    "Marketplace": true
+    "Marketplace": true,
+    "Einvoice": true
 }

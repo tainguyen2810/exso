@@ -3,10 +3,10 @@
 namespace Modules\Marketplace\Models;
 
 use App\Models\Branch;
+use App\Models\User;
 use App\Support\Activity\LogsActivity;
 use App\Tenancy\BelongsToTenant;
 use Carbon\CarbonImmutable;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
