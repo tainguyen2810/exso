@@ -71,36 +71,45 @@ class MarketplaceDemoSeeder extends Seeder
             }
         }
 
-        $line = fn (string $item, string $model, string $sku, string $name, int $quantity, int $price): array => [
-            'item_id' => $item, 'model_id' => $model, 'sku' => $sku, 'name' => $name, 'quantity' => $quantity, 'price' => $price, 'original_price' => $price + 20000,
-        ];
-        $order = function (string $id, string $status, array $items, string $buyer, int $minutes, ?string $tracking = null) use ($orders, $shop): void {
-            $placed = CarbonImmutable::now()->subMinutes($minutes);
-            $orders->sync($shop, new PlatformOrder(
-                id: $id,
-                status: $status,
-                state: ShopeeDriver::STATUSES[$status][1],
-                items: $items,
-                total: array_sum(array_map(fn (array $item): int => $item['price'] * $item['quantity'], $items)),
-                buyerId: (string) crc32($buyer),
-                buyerUsername: $buyer,
-                recipientName: mb_substr($buyer, 0, 1).'*****',
-                recipientPhone: '******'.random_int(10, 99),
-                address: '***, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
-                carrier: 'SPX Express',
-                trackingCode: $tracking,
-                placedAt: $placed,
-                updatedAt: $placed->addMinutes(3),
-            ));
-        };
-
-        $order('241029ABCD01', 'COMPLETED', [$line('20001', '0', 'LOGI-M331', 'Chuột không dây Logitech M331 Silent Plus', 1, 379000)], 'minhanh.ng', 60 * 30, 'SPXVN041234567');
-        $order('241029ABCD02', 'SHIPPED', [$line('20002', '0', 'UG-HDMI2', 'Cáp HDMI 2.0 Ugreen 2m 4K60Hz', 2, 149000)], 'tuan_pc', 60 * 20, 'SPXVN041234588');
-        $order('241029ABCD03', 'READY_TO_SHIP', [
-            $line('20003', '30011', 'AT-DEN-M', 'Áo thun EXSO Đen, M', 2, 175000),
-            $line('20001', '0', 'LOGI-M331', 'Chuột không dây Logitech M331 Silent Plus', 1, 379000),
+        $this->order($orders, $shop, '241029ABCD01', 'COMPLETED', [$this->line('20001', '0', 'LOGI-M331', 'Chuột không dây Logitech M331 Silent Plus', 1, 379000)], 'minhanh.ng', 60 * 30, 'SPXVN041234567');
+        $this->order($orders, $shop, '241029ABCD02', 'SHIPPED', [$this->line('20002', '0', 'UG-HDMI2', 'Cáp HDMI 2.0 Ugreen 2m 4K60Hz', 2, 149000)], 'tuan_pc', 60 * 20, 'SPXVN041234588');
+        $this->order($orders, $shop, '241029ABCD03', 'READY_TO_SHIP', [
+            $this->line('20003', '30011', 'AT-DEN-M', 'Áo thun EXSO Đen, M', 2, 175000),
+            $this->line('20001', '0', 'LOGI-M331', 'Chuột không dây Logitech M331 Silent Plus', 1, 379000),
         ], 'hoa.tran99', 45);
-        $order('241029ABCD04', 'READY_TO_SHIP', [$line('20004', '0', 'KB-87-WL', 'Bàn phím cơ không dây 87 phím', 1, 890000)], 'gamer.vn', 12);
-        $order('241029ABCD05', 'CANCELLED', [$line('20002', '0', 'UG-HDMI2', 'Cáp HDMI 2.0 Ugreen 2m 4K60Hz', 1, 149000)], 'lanphuong', 60 * 5);
+        $this->order($orders, $shop, '241029ABCD04', 'READY_TO_SHIP', [$this->line('20004', '0', 'KB-87-WL', 'Bàn phím cơ không dây 87 phím', 1, 890000)], 'gamer.vn', 12);
+        $this->order($orders, $shop, '241029ABCD05', 'CANCELLED', [$this->line('20002', '0', 'UG-HDMI2', 'Cáp HDMI 2.0 Ugreen 2m 4K60Hz', 1, 149000)], 'lanphuong', 60 * 5);
+    }
+
+    /**
+     * @return array{item_id: string, model_id: string, sku: string|null, name: string, quantity: int, price: int, original_price: int}
+     */
+    protected function line(string $item, string $model, string $sku, string $name, int $quantity, int $price): array
+    {
+        return ['item_id' => $item, 'model_id' => $model, 'sku' => $sku, 'name' => $name, 'quantity' => $quantity, 'price' => $price, 'original_price' => $price + 20000];
+    }
+
+    /**
+     * @param  list<array{item_id: string, model_id: string, sku: string|null, name: string, quantity: int, price: int, original_price: int}>  $items
+     */
+    protected function order(MarketplaceOrderService $orders, MarketplaceShop $shop, string $id, string $status, array $items, string $buyer, int $minutes, ?string $tracking = null): void
+    {
+        $placed = CarbonImmutable::now()->subMinutes($minutes);
+        $orders->sync($shop, new PlatformOrder(
+            id: $id,
+            status: $status,
+            state: ShopeeDriver::STATUSES[$status][1],
+            items: $items,
+            total: array_sum(array_map(fn (array $item): int => $item['price'] * $item['quantity'], $items)),
+            buyerId: (string) crc32($buyer),
+            buyerUsername: $buyer,
+            recipientName: mb_substr($buyer, 0, 1).'*****',
+            recipientPhone: '******'.random_int(10, 99),
+            address: '***, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+            carrier: 'SPX Express',
+            trackingCode: $tracking,
+            placedAt: $placed,
+            updatedAt: $placed->addMinutes(3),
+        ));
     }
 }

@@ -42,22 +42,6 @@ class EinvoiceDemoSeeder extends Seeder
         $company = Customer::query()->where('phone', '02838123456')->first();
         $company?->forceFill(['tax_code' => '0312345678', 'email' => 'ketoan@minhphat.vn'])->save();
 
-        $sell = function (string $phone, array $lines, array $extra = []) use ($orders, $owner, $main): Order {
-            $items = [];
-
-            foreach ($lines as [$sku, $quantity]) {
-                $items[] = ['variant_id' => ProductVariant::query()->where('sku', $sku)->value('id'), 'quantity' => $quantity];
-            }
-
-            return $orders->create([
-                'branch_id' => $main,
-                'customer_id' => Customer::query()->where('phone', $phone)->value('id'),
-                'delivery_method' => 'pickup',
-                'items' => $items,
-                ...$extra,
-            ], $owner, 'export');
-        };
-
         $number = 0;
         $issue = function (Einvoice $invoice, int $daysAgo) use ($provider, $owner, &$number): void {
             $number++;
@@ -73,14 +57,36 @@ class EinvoiceDemoSeeder extends Seeder
             ])->save();
         };
 
-        $issue($invoices->fromOrder($sell('02838123456', [['KEY-K2', 2], ['LOGI-M331', 5]], ['discount' => 200000])), 2);
-        $issue($invoices->fromOrder($sell('0901234567', [['UG-HDMI2', 3]])), 1);
-        $invoices->fromOrder($sell('0912345678', [['JAB-E230', 1]]));
+        $issue($invoices->fromOrder($this->sell($orders, $owner, $main, '02838123456', [['KEY-K2', 2], ['LOGI-M331', 5]], 200000)), 2);
+        $issue($invoices->fromOrder($this->sell($orders, $owner, $main, '0901234567', [['UG-HDMI2', 3]])), 1);
+        $invoices->fromOrder($this->sell($orders, $owner, $main, '0912345678', [['JAB-E230', 1]]));
 
-        $failed = $invoices->fromOrder($sell('0987654321', [['LOGI-M331', 2]]));
+        $failed = $invoices->fromOrder($this->sell($orders, $owner, $main, '0987654321', [['LOGI-M331', 2]]));
         $failed->forceFill(['status' => Einvoice::FAILED, 'provider_id' => $provider->id, 'error' => 'Viettel: Ký hiệu hóa đơn không đúng với mẫu số đã đăng ký.'])->save();
 
         // Waiting on "Đơn chưa tạo HĐĐT".
-        $sell('0933111222', [['UG-HDMI2', 1]]);
+        $this->sell($orders, $owner, $main, '0933111222', [['UG-HDMI2', 1]]);
+    }
+
+    /**
+     * An order picked up at the store: exported and completed at once.
+     *
+     * @param  list<array{0: string, 1: int}>  $lines
+     */
+    protected function sell(OrderService $orders, User $owner, int $branchId, string $phone, array $lines, int $discount = 0): Order
+    {
+        $items = [];
+
+        foreach ($lines as [$sku, $quantity]) {
+            $items[] = ['variant_id' => ProductVariant::query()->where('sku', $sku)->firstOrFail()->id, 'quantity' => $quantity];
+        }
+
+        return $orders->create([
+            'branch_id' => $branchId,
+            'customer_id' => Customer::query()->where('phone', $phone)->firstOrFail()->id,
+            'delivery_method' => 'pickup',
+            'discount' => $discount,
+            'items' => $items,
+        ], $owner, 'export');
     }
 }
