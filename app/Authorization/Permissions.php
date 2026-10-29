@@ -54,6 +54,16 @@ class Permissions
                 'labels' => ['create' => 'Tạo đơn trả hàng', 'pay' => 'Hoàn tiền'],
             ],
             'pos' => ['label' => 'Bán tại quầy', 'group' => 'Đơn hàng', 'actions' => ['view', 'create'], 'labels' => ['create' => 'Bán hàng']],
+            'einvoices' => [
+                'label' => 'Hóa đơn điện tử', 'group' => 'Đơn hàng',
+                'actions' => ['view', 'create', 'approve', 'cancel', 'export'],
+                'labels' => ['create' => 'Tạo, sửa hóa đơn nháp', 'approve' => 'Phát hành hóa đơn, lập hóa đơn điều chỉnh', 'cancel' => 'Hủy hóa đơn'],
+            ],
+            'marketplaces' => [
+                'label' => 'Sàn TMĐT', 'group' => 'Kênh bán hàng',
+                'actions' => ['view', 'create', 'update', 'delete'],
+                'labels' => ['create' => 'Kết nối gian hàng', 'update' => 'Cấu hình gian hàng, liên kết sản phẩm, đồng bộ', 'delete' => 'Ngắt kết nối gian hàng'],
+            ],
             'shipments' => [
                 'label' => 'Vận đơn', 'group' => 'Vận chuyển',
                 'actions' => ['view', 'create', 'update', 'cancel', 'export'],
@@ -203,6 +213,7 @@ class Permissions
                 'suppliers.view', 'suppliers.export', 'purchases.view', 'purchases.pay', 'purchases.export',
                 'shipments.view', 'shipments.export', 'cod_reconciliations.view', 'cod_reconciliations.create',
                 'cod_reconciliations.approve', 'cod_reconciliations.cancel', 'cod_reconciliations.export', 'carriers.view',
+                'einvoices.view', 'einvoices.create', 'einvoices.approve', 'einvoices.cancel', 'einvoices.export',
             ],
         ];
     }

@@ -35,10 +35,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Pages of later phases, shown as "coming soon" so the menu matches the
     // final layout. Each is guarded by its permission so roles can be set up
     // now. A phase that builds a page removes its line here.
-    $upcoming = [
-        'e-invoices' => ['Hóa đơn điện tử', 'G7', 'orders.view'],
-        'marketplaces' => ['Sàn TMĐT', 'G7', 'orders.view'],
-    ];
+    /** @var array<string, array{0: string, 1: string, 2: string}> $upcoming */
+    $upcoming = [];
 
     foreach ($upcoming as $path => [$title, $phase, $permission]) {
         Route::inertia($path, 'coming-soon', ['title' => $title, 'phase' => $phase])

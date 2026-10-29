@@ -1,0 +1,9 @@
+{
+    "name": "Marketplace",
+    "alias": "marketplace",
+    "description": "Sàn TMĐT: kết nối gian hàng Shopee, liên kết sản phẩm sàn với phiên bản, đơn sàn tự về hệ thống, đẩy tồn \"Có thể bán\" lên sàn.",
+    "keywords": [],
+    "priority": 90,
+    "providers": ["Modules\\Marketplace\\Providers\\MarketplaceServiceProvider"],
+    "files": []
+}

@@ -154,6 +154,14 @@ const STEPS = [
 
 const ORDER = ['pending', 'approved', 'packed', 'shipped', 'completed'];
 
+/** A card added by another module (order.panels), e.g. e-invoice, marketplace. */
+type Panel = {
+    title: string;
+    href?: string | null;
+    lines: { label: string; value: string; href?: string | null }[];
+    actions?: { label: string; href: string; method?: 'get' | 'post' }[];
+};
+
 /** Chi tiết đơn hàng like Sapo: 5-step bar, one block per job, history. */
 export default function OrderShow({
     order,
@@ -163,6 +171,8 @@ export default function OrderShow({
     requireCancelReason,
     allowCancelAfterExport,
     shipping = { enabled: false },
+    panels = [],
+    locked = null,
 }: {
     order: Order;
     paymentMethods: PaymentMethodOption[];
@@ -174,6 +184,9 @@ export default function OrderShow({
         shipments?: ShipmentSummary[];
         defaults?: (Receiver & Partial<ShipmentDraft>) | null;
     };
+    panels?: Panel[];
+    /** Why the order cannot be changed or cancelled (e.g. e-invoice issued). */
+    locked?: string | null;
 }) {
     const can = useCan();
     const [paying, setPaying] = useState(false);
@@ -185,9 +198,11 @@ export default function OrderShow({
     const [cancelling, setCancelling] = useState(false);
     const cancelled = order.status === 'cancelled';
     const exported = ['shipped', 'completed'].includes(order.status);
-    const editable = ['pending', 'approved', 'packed'].includes(order.status);
+    const editable =
+        ['pending', 'approved', 'packed'].includes(order.status) && !locked;
     const canCancel =
         can('orders.cancel') &&
+        !locked &&
         !cancelled &&
         order.status !== 'completed' &&
         (!exported || allowCancelAfterExport);
@@ -336,6 +351,54 @@ export default function OrderShow({
                                 )}
                             </Card>
                         )}
+                        {panels.map((panel) => (
+                            <Card key={panel.title} className="gap-0 py-0">
+                                <CardHeader className="flex-row items-center justify-between border-b px-5 py-4">
+                                    <CardTitle>{panel.title}</CardTitle>
+                                    {panel.href && (
+                                        <Link
+                                            href={panel.href}
+                                            className="text-sm text-primary hover:underline"
+                                        >
+                                            Xem
+                                        </Link>
+                                    )}
+                                </CardHeader>
+                                <CardContent className="grid gap-2 px-5 py-4 text-sm">
+                                    {panel.lines.map((line) => (
+                                        <Line key={line.label} label={line.label}>
+                                            {line.href ? (
+                                                <Link
+                                                    href={line.href}
+                                                    className="text-primary hover:underline"
+                                                >
+                                                    {line.value}
+                                                </Link>
+                                            ) : (
+                                                line.value
+                                            )}
+                                        </Line>
+                                    ))}
+                                    {(panel.actions ?? []).map((action) => (
+                                        <Button
+                                            key={action.label}
+                                            variant="outline"
+                                            size="sm"
+                                            className="mt-1 justify-self-start"
+                                            asChild
+                                        >
+                                            <Link
+                                                href={action.href}
+                                                method={action.method ?? 'get'}
+                                                as="button"
+                                            >
+                                                {action.label}
+                                            </Link>
+                                        </Button>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        ))}
                         <Card className="gap-0 py-0">
                             <CardHeader className="border-b px-5 py-4">
                                 <CardTitle>Lịch sử đơn hàng</CardTitle>

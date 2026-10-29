@@ -53,7 +53,7 @@ export const menu: NavGroup[] = [
                     {
                         title: 'Hóa đơn điện tử',
                         href: '/e-invoices',
-                        permission: 'orders.view',
+                        permission: 'einvoices.view',
                     },
                     {
                         title: 'Khách trả hàng',
@@ -259,7 +259,28 @@ export const menu: NavGroup[] = [
                 title: 'Sàn TMĐT',
                 href: '/marketplaces',
                 icon: ShoppingBag,
-                permission: 'orders.view',
+                children: [
+                    {
+                        title: 'Tổng quan',
+                        href: '/marketplaces',
+                        permission: 'marketplaces.view',
+                    },
+                    {
+                        title: 'Đơn hàng',
+                        href: '/marketplaces/orders',
+                        permission: 'marketplaces.view',
+                    },
+                    {
+                        title: 'Sản phẩm',
+                        href: '/marketplaces/products',
+                        permission: 'marketplaces.view',
+                    },
+                    {
+                        title: 'Cấu hình',
+                        href: '/marketplaces/settings',
+                        permission: 'marketplaces.view',
+                    },
+                ],
             },
         ],
     },
