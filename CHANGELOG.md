@@ -4,6 +4,19 @@ Theo [Semantic Versioning](https://semver.org/lang/vi/). Bản chưa phát hành
 
 ## Chưa phát hành
 
+### G7: Sàn TMĐT và Hóa đơn điện tử
+
+- Module **Sàn TMĐT** (Shopee, Open Platform v2): kết nối gian hàng bằng cấp quyền của người bán (token lưu mã hóa, tự làm mới, báo "Hết hạn" khi cần cấp quyền lại), mỗi gian hàng gắn một chi nhánh lấy tồn và tạo đơn, hình thức thanh toán ghi nhận khi đơn sàn hoàn thành.
+- **Sản phẩm sàn**: tải danh sách sản phẩm/phân loại từ sàn, tự liên kết theo SKU, liên kết/hủy liên kết tay với phiên bản EXSO, lọc chưa liên kết.
+- **Đơn sàn tự về**: webhook có kiểm chữ ký (địa chỉ bí mật từng gian hàng) và lệnh `marketplace:sync` mỗi 5 phút; đơn mới tạo đơn EXSO với Nguồn = sàn, Mã tham chiếu = mã đơn sàn, giá theo sàn; sàn chuẩn bị hàng → duyệt (giữ hàng), giao cho vận chuyển → xuất kho, giao thành công → hoàn thành + thanh toán, hủy → hủy đơn (nhập lại kho nếu đã xuất). Đơn có sản phẩm chưa liên kết chờ ở trạng thái "Chưa liên kết" và tự đồng bộ lại sau khi liên kết. Chạy lại không tạo đơn trùng.
+- **Đẩy tồn "Có thể bán"** (tồn − đang giữ) lên sàn qua hàng đợi khi tồn hoặc hàng giữ thay đổi, gộp nhiều thay đổi thành một lần gửi; đẩy lại toàn bộ mỗi giờ.
+- Trang **Tổng quan sàn**, **Đơn hàng sàn** (trạng thái trên sàn, trạng thái đồng bộ, đồng bộ lại, xuất Excel), **Sản phẩm sàn**, **Cấu hình** từng gian hàng; thẻ "Đơn sàn TMĐT" ở chi tiết đơn hàng.
+- Module **Hóa đơn điện tử** (Viettel S-Invoice): kết nối tài khoản (kiểm tra trước khi lưu, mật khẩu mã hóa, môi trường thử nghiệm), mẫu số, ký hiệu; tạo hóa đơn nháp từ đơn đã xuất kho với người mua lấy từ khách hàng (MST, tên đơn vị, địa chỉ, email), chiết khấu đơn chia vào từng dòng, phí giao hàng thành một dòng, thuế theo cấu hình thuế (giá đã gồm thuế hoặc chưa).
+- Phát hành, hủy, **lập hóa đơn điều chỉnh** (tăng, giảm, thông tin), tải PDF; phát hành lỗi giữ lại lý do để sửa và phát hành lại, không phát hành trùng (mã giao dịch). Tùy chọn **tự xuất hóa đơn khi đơn hoàn thành**.
+- Đơn đã có hóa đơn điện tử phát hành không sửa, không hủy được (phải hủy hoặc điều chỉnh hóa đơn trước); thẻ "Hóa đơn điện tử" ở chi tiết đơn hàng.
+- Trang **Hóa đơn điện tử** (các cột như Sapo, phát hành hàng loạt, xuất Excel) và **Đơn chưa tạo HĐĐT** (tạo nháp hoặc tạo và phát hành hàng loạt).
+- Quyền mới `marketplaces.*`, `einvoices.*` (cấp cho vai trò cũ qua migration). Bỏ trang "sắp có": mọi mục menu đã có trang.
+
 ### G6: Vận chuyển
 
 - Module **Vận chuyển**: phiếu giao hàng (FUN) từ đơn hàng với 4 cách giao trong Tạo đơn như Sapo (đẩy qua hãng vận chuyển, đẩy vận chuyển ngoài, nhận tại cửa hàng, giao sau) và nút Giao hàng ở chi tiết đơn; khối lượng, kích thước, COD, khai giá, người trả phí, yêu cầu khi giao.

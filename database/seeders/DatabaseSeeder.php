@@ -11,6 +11,8 @@ use App\Support\Settings\StoreDefaults;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
 use Modules\Customer\Database\Seeders\CustomerDemoSeeder;
+use Modules\Einvoice\Database\Seeders\EinvoiceDemoSeeder;
+use Modules\Marketplace\Database\Seeders\MarketplaceDemoSeeder;
 use Modules\Order\Database\Seeders\OrderDemoSeeder;
 use Modules\Product\Database\Seeders\ProductDemoSeeder;
 use Modules\Promotion\Database\Seeders\PromotionDemoSeeder;
@@ -84,6 +86,8 @@ class DatabaseSeeder extends Seeder
             $this->call(OrderDemoSeeder::class);
             $this->call(PromotionDemoSeeder::class);
             $this->call(ShippingDemoSeeder::class);
+            $this->call(MarketplaceDemoSeeder::class);
+            $this->call(EinvoiceDemoSeeder::class);
             $this->call(ReportDemoSeeder::class);
         });
     }

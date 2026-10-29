@@ -10,6 +10,7 @@ use App\Models\SalesSource;
 use App\Models\User;
 use App\Support\Branches\CurrentBranch;
 use App\Support\DataTable\DataTable;
+use App\Support\Hooks\Hook;
 use App\Support\Settings\Banks;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -285,6 +286,9 @@ class OrderController extends Controller
                 ...app(OrderShipping::class)->options($request->user()),
                 ...app(OrderShipping::class)->panel($order, $request->user()),
             ],
+            // Cards of other modules (G7: e-invoice, marketplace order).
+            'panels' => Hook::filter('order.panels', [], $order, $request->user()),
+            'locked' => $this->orders->lockedReason($order),
         ]);
     }
 
@@ -294,6 +298,12 @@ class OrderController extends Controller
 
         if (! $order->isEditable()) {
             $this->toast('Đơn đã xuất kho hoặc đã hủy, không sửa được. Hàng đã xuất muốn đổi thì tạo đơn trả hàng.', 'warning');
+
+            return to_route('orders.show', $order);
+        }
+
+        if (($reason = $this->orders->lockedReason($order)) !== null) {
+            $this->toast($reason, 'warning');
 
             return to_route('orders.show', $order);
         }

@@ -5,6 +5,7 @@ namespace Modules\Inventory\Services;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Modules\Inventory\Events\ReservationChanged;
 use Modules\Inventory\Events\StockChanged;
 use Modules\Inventory\Exceptions\InsufficientStockException;
 use Modules\Inventory\Models\Inventory;
@@ -344,12 +345,21 @@ class InventoryService
 
     protected function changeReserved(int $branchId, ProductVariant $variant, int $quantity): void
     {
-        DB::transaction(function () use ($branchId, $variant, $quantity): void {
+        $ids = DB::transaction(function () use ($branchId, $variant, $quantity): array {
+            $ids = [];
+
             foreach ($this->components($variant, $quantity) as [$base, $delta]) {
                 $inventory = $this->lockInventory($branchId, $base->id);
                 $inventory->forceFill(['reserved' => max(0, $inventory->reserved + $delta)])->save();
+                $ids[] = $base->id;
             }
+
+            return $ids;
         });
+
+        if ($ids !== []) {
+            DB::afterCommit(fn () => event(new ReservationChanged($branchId, $ids)));
+        }
     }
 
     protected function assertBaseGoods(ProductVariant $variant): void

@@ -7,5 +7,7 @@
     "Cashbook": true,
     "Report": true,
     "Promotion": true,
-    "Shipping": true
+    "Shipping": true,
+    "Marketplace": true,
+    "Einvoice": true
 }

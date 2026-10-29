@@ -14,16 +14,9 @@ test('pages of later phases are guarded by their permission', function (string $
     ['/cashbook', false],
     ['/cashbook/receipts', false],
     ['/reports/sales', false],
+    ['/marketplaces', false],
+    ['/e-invoices', false],
 ]);
-
-test('a coming soon page tells which phase builds it', function () {
-    $this->actingAs(owner())
-        ->get('/e-invoices')
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('coming-soon')
-            ->where('title', 'Hóa đơn điện tử')
-            ->where('phase', 'G7'));
-});
 
 test('the config hub opens for anyone who can see one of its pages', function () {
     $this->actingAs(owner())->get('/config')->assertOk()

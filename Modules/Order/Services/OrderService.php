@@ -5,6 +5,7 @@ namespace Modules\Order\Services;
 use App\Models\OrderReason;
 use App\Models\PaymentMethod;
 use App\Models\User;
+use App\Support\Hooks\Hook;
 use App\Support\Sequences\Sequence;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -64,17 +65,23 @@ class OrderService
      * duyệt), "export" (approve and take the goods out, e.g. the customer
      * takes them at the counter).
      *
+     * Options, for orders that come from another system (marketplaces), never
+     * from a browser: `trusted_prices` keeps the line prices given (the
+     * buyer already paid them), `skip_stock_check` saves the order even when
+     * stock is short (it was already sold).
+     *
      * @param  OrderInput  $data
+     * @param  array{trusted_prices?: bool, skip_stock_check?: bool}  $options
      */
-    public function create(array $data, User $user, ?string $then = null): Order
+    public function create(array $data, User $user, ?string $then = null, array $options = []): Order
     {
         $customer = $this->customer($data['customer_id'] ?? null);
         $policy = $this->policy($data, $customer);
-        $lines = $this->lines($data['items'], $policy, $user);
+        $lines = $this->lines($data['items'], $policy, $user, null, (bool) ($options['trusted_prices'] ?? false));
         [$lines, $outcome] = $this->promote($data, $lines, $customer, true);
         $totals = $this->totals($lines, (int) ($data['discount'] ?? 0), $data['discount_bp'] ?? null, (int) ($data['shipping_fee'] ?? 0), $outcome->orderDiscount);
 
-        if (! settings('sales.allow_negative_order')) {
+        if (! settings('sales.allow_negative_order') && ! ($options['skip_stock_check'] ?? false)) {
             $this->checkAvailable($lines, (int) $data['branch_id']);
         }
 
@@ -139,6 +146,8 @@ class OrderService
             if (! $locked->isEditable()) {
                 throw ValidationException::withMessages(['status' => 'Đơn đã xuất kho hoặc đã hủy, không sửa được. Hàng đã xuất muốn đổi thì tạo đơn trả hàng.']);
             }
+
+            $this->assertNotLocked($locked);
 
             if ($totals['total'] < $locked->paid) {
                 throw ValidationException::withMessages(['items' => 'Tổng tiền mới nhỏ hơn số khách đã trả ('.number_format($locked->paid, 0, ',', '.').'). Hãy hoàn tiền trước.']);
@@ -367,6 +376,8 @@ class OrderService
             if ($locked->status === Order::CANCELLED) {
                 throw ValidationException::withMessages(['status' => 'Đơn hàng đã hủy.']);
             }
+
+            $this->assertNotLocked($locked);
 
             if ($locked->holdsStock()) {
                 $this->changeReservation($locked, -1);
@@ -675,7 +686,7 @@ class OrderService
      * @param  Policy  $policy
      * @return list<Line>
      */
-    public function lines(array $items, array $policy, User $user, ?Order $order = null): array
+    public function lines(array $items, array $policy, User $user, ?Order $order = null, bool $trustedPrices = false): array
     {
         if ($items === []) {
             throw ValidationException::withMessages(['items' => 'Thêm ít nhất một sản phẩm.']);
@@ -686,7 +697,7 @@ class OrderService
         $prices = $this->prices->prices($variants->values(), $policy);
         // Lines already on the order keep their product even if it was stopped since.
         $kept = $order === null ? [] : $order->items()->pluck('variant_id')->filter()->all();
-        $canEditPrice = $this->canEditPrice($user);
+        $canEditPrice = $trustedPrices || $this->canEditPrice($user);
         $lines = [];
 
         foreach ($items as $index => $item) {
@@ -729,6 +740,26 @@ class OrderService
         }
 
         return $lines;
+    }
+
+    /**
+     * Other modules may lock an order's money, e.g. once an e-invoice is
+     * issued for it (G7): Hook::addFilter('order.locked', fn (?string $reason, Order $order) => ...).
+     */
+    public function lockedReason(Order $order): ?string
+    {
+        $reason = Hook::filter('order.locked', null, $order);
+
+        return is_string($reason) && $reason !== '' ? $reason : null;
+    }
+
+    protected function assertNotLocked(Order $order): void
+    {
+        $reason = $this->lockedReason($order);
+
+        if ($reason !== null) {
+            throw ValidationException::withMessages(['status' => $reason]);
+        }
     }
 
     public function canEditPrice(User $user): bool
