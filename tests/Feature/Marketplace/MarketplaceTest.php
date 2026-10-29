@@ -215,7 +215,7 @@ test('the order follows Shopee: shipped takes the goods out, completed records t
         ->and($order->tracking_code)->toBe('SPXVN0123')
         ->and(stockRow($item)->on_hand)->toBe(7)
         ->and(stockRow($item)->reserved)->toBe(0)
-        ->and(StockMovement::query()->where('type', StockMovement::SALE)->where('reference_code', $order->code)->sum('quantity'))->toBe(-3);
+        ->and((int) StockMovement::query()->where('type', StockMovement::SALE)->where('reference_code', $order->code)->sum('quantity'))->toBe(-3);
 
     $this->shopee['orders']['A1'] = shopeeOrder('A1', 'COMPLETED', [shopeeItem('1001', '0', 239000, 3)]);
     $service->syncIds($shop, ['A1']);
