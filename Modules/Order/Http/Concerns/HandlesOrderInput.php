@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Modules\Customer\Http\Controllers\CustomerController;
+use Modules\Order\Contracts\OrderShipping;
 use Modules\Order\Models\Order;
 use Modules\Order\Services\OrderService;
 
@@ -143,6 +144,8 @@ trait HandlesOrderInput
                 'multiple' => settings('promotions.apply_mode') === 'many',
                 'coupons' => (bool) settings('coupons.enabled'),
             ],
+            // Vận chuyển (G6): partners of "Đóng gói và giao hàng".
+            'shipping' => app(OrderShipping::class)->options($user),
         ];
     }
 

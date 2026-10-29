@@ -70,22 +70,27 @@ export const menu: NavGroup[] = [
                     {
                         title: 'Tổng quan',
                         href: '/shipping',
-                        permission: 'orders.view',
+                        permission: 'shipments.view',
                     },
                     {
                         title: 'Quản lý vận đơn',
                         href: '/shipments',
-                        permission: 'orders.view',
+                        permission: 'shipments.view',
                     },
                     {
                         title: 'Đối soát COD và phí',
                         href: '/cod-reconciliations',
-                        permission: 'orders.view',
+                        permission: 'cod_reconciliations.view',
                     },
                     {
                         title: 'Kết nối đối tác',
                         href: '/shipping/partners',
-                        permission: 'orders.view',
+                        permission: 'carriers.view',
+                    },
+                    {
+                        title: 'Cấu hình giao hàng',
+                        href: '/shipping/settings',
+                        permission: 'settings.view',
                     },
                 ],
             },
@@ -401,6 +406,15 @@ export const configEntries: ConfigEntry[] = [
         href: '/promotions/settings',
         icon: BadgePercent,
         permission: 'promotions.view',
+        group: 'Thiết lập bán hàng',
+    },
+    {
+        title: 'Cấu hình giao hàng',
+        description:
+            'Khối lượng, kích thước mặc định, yêu cầu khi giao và tự động theo hãng vận chuyển.',
+        href: '/shipping/settings',
+        icon: Truck,
+        permission: 'settings.view',
         group: 'Thiết lập bán hàng',
     },
     {

@@ -16,6 +16,7 @@ use Modules\Product\Database\Seeders\ProductDemoSeeder;
 use Modules\Promotion\Database\Seeders\PromotionDemoSeeder;
 use Modules\Purchase\Database\Seeders\PurchaseDemoSeeder;
 use Modules\Report\Database\Seeders\ReportDemoSeeder;
+use Modules\Shipping\Database\Seeders\ShippingDemoSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -82,6 +83,7 @@ class DatabaseSeeder extends Seeder
             $this->call(CustomerDemoSeeder::class);
             $this->call(OrderDemoSeeder::class);
             $this->call(PromotionDemoSeeder::class);
+            $this->call(ShippingDemoSeeder::class);
             $this->call(ReportDemoSeeder::class);
         });
     }

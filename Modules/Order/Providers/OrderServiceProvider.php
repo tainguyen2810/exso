@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Customer\Models\CustomerDebt;
 use Modules\Order\Contracts\NoPromotions;
+use Modules\Order\Contracts\NoShipping;
 use Modules\Order\Contracts\OrderPromotions;
+use Modules\Order\Contracts\OrderShipping;
 use Modules\Order\Dashboard\SalesSummary;
 use Modules\Order\Http\Controllers\OrderController;
 use Modules\Order\Models\Order;
@@ -24,6 +26,8 @@ class OrderServiceProvider extends ServiceProvider
     {
         // The Promotion module binds the real engine; without it nothing applies.
         $this->app->singletonIf(OrderPromotions::class, NoPromotions::class);
+        // The Shipping module binds the partners; without it only manual delivery.
+        $this->app->singletonIf(OrderShipping::class, NoShipping::class);
         $this->app->singleton(PriceResolver::class);
         $this->app->singleton(OrderService::class);
         $this->app->singleton(ReturnService::class);

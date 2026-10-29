@@ -20,6 +20,7 @@ use Modules\Purchase\Models\PurchaseReceipt;
 use Modules\Purchase\Models\Supplier;
 use Modules\Purchase\Models\SupplierDebt;
 use Modules\Purchase\Services\SupplierLedger;
+use Modules\Shipping\Models\CodReconciliation;
 
 /**
  * Sổ quỹ: the only place vouchers are created or cancelled.
@@ -235,6 +236,43 @@ class CashbookService
     }
 
     /**
+     * Phiếu chi for the fees a shipping partner kept when a COD
+     * reconciliation is completed (the COD itself arrives as order
+     * payments). It counts as a business expense in the profit report.
+     */
+    public function recordCarrierFee(CodReconciliation $reconciliation): ?CashVoucher
+    {
+        if ($reconciliation->partner_fee_total <= 0 || $this->existsFor($reconciliation->getMorphClass(), $reconciliation->id)) {
+            return null;
+        }
+
+        $reconciliation->loadMissing(['carrier', 'paymentMethod']);
+        $method = $reconciliation->paymentMethod;
+
+        return $this->createAuto([
+            'branch_id' => $reconciliation->branch_id,
+            'kind' => CashVoucher::PAYMENT,
+            'party_type' => 'other',
+            'party_id' => null,
+            'party_name' => $reconciliation->carrier->name,
+            'amount' => $reconciliation->partner_fee_total,
+            'payment_method_id' => $method?->id,
+            'method_name' => $method->name ?? 'Chuyển khoản',
+            'method_type' => $method->type ?? 'bank',
+            'origin_type' => $reconciliation->getMorphClass(),
+            'origin_id' => $reconciliation->id,
+            'document_type' => $reconciliation->getMorphClass(),
+            'document_id' => $reconciliation->id,
+            'document_code' => $reconciliation->code,
+            'changes_debt' => false,
+            'affects_profit' => true,
+            'description' => 'Phiếu chi tự động tạo khi đối soát phí giao hàng với đối tác vận chuyển',
+            'recorded_at' => $reconciliation->completed_at ?? now(),
+            'created_by' => $reconciliation->completed_by,
+        ]);
+    }
+
+    /**
      * Automatic vouchers for payments recorded before the cash book existed
      * (or missed). Runs in the current store. Returns how many were created.
      */
@@ -255,6 +293,14 @@ class CashbookService
             ->orderBy('id')
             ->each(function (SupplierDebt $line) use (&$created): void {
                 $created += $this->recordSupplierPayment($line) === null ? 0 : 1;
+            });
+
+        CodReconciliation::query()
+            ->where('status', CodReconciliation::DONE)
+            ->whereNotIn('id', CashVoucher::query()->where('origin_type', (new CodReconciliation)->getMorphClass())->select('origin_id'))
+            ->orderBy('id')
+            ->each(function (CodReconciliation $reconciliation) use (&$created): void {
+                $created += $this->recordCarrierFee($reconciliation) === null ? 0 : 1;
             });
 
         return $created;
@@ -297,12 +343,12 @@ class CashbookService
 
             /** @var CashVoucher $voucher */
             $voucher = CashVoucher::query()->create([
+                'affects_profit' => false,
                 ...$attributes,
                 'code' => Sequence::next(CashVoucher::prefix($kind), CashVoucher::class),
                 'type_id' => CashVoucherType::auto($kind)->id,
                 'status' => CashVoucher::COMPLETED,
                 'is_auto' => true,
-                'affects_profit' => false,
             ]);
 
             return $voucher;

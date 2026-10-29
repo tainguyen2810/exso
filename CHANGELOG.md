@@ -4,6 +4,18 @@ Theo [Semantic Versioning](https://semver.org/lang/vi/). Bản chưa phát hành
 
 ## Chưa phát hành
 
+### G6: Vận chuyển
+
+- Module **Vận chuyển**: phiếu giao hàng (FUN) từ đơn hàng với 4 cách giao trong Tạo đơn như Sapo (đẩy qua hãng vận chuyển, đẩy vận chuyển ngoài, nhận tại cửa hàng, giao sau) và nút Giao hàng ở chi tiết đơn; khối lượng, kích thước, COD, khai giá, người trả phí, yêu cầu khi giao.
+- **Kết nối GHN** (API v2): tính phí và chọn gói cước, tạo/hủy vận đơn, in nhãn A5 của GHN, Token lưu mã hóa theo cửa hàng, cửa hàng GHN theo chi nhánh, môi trường thử nghiệm. Trạng thái GHN quy về trạng thái chung (Chờ lấy hàng, Đang giao, Chờ giao lại, Đã giao, Hủy giao - chờ nhận / đã nhận, Hủy đóng gói); webhook theo địa chỉ bí mật của từng cửa hàng, luôn hỏi lại GHN rồi cập nhật qua hàng đợi; lệnh `shipping:sync` mỗi 30 phút cho hosting không nhận được webhook.
+- Đơn hàng đi theo vận đơn: đối tác lấy hàng → xuất kho, giao thành công → hoàn thành, giao thất bại → chờ giao lại hoặc hoàn hàng, hàng về → nhập lại kho (tùy cấu hình); hủy đơn thì hủy vận đơn ở GHN.
+- **Đối tác tự liên hệ** (DTVC): thêm/sửa/ngừng, cập nhật trạng thái vận đơn bằng tay, công nợ COD.
+- **Quản lý vận đơn** với tab trạng thái, lọc đối tác/đối soát/ngày, xuất Excel, chi tiết vận đơn và lịch sử, in phiếu giao A5/K80.
+- **Đối soát COD và phí** (DSCOD): chọn vận đơn đã giao/hoàn (F3, Chọn nhiều), số liệu hệ thống và đối tác, tab vận đơn chênh lệch; Thanh toán công nợ ghi tiền COD vào từng đơn hàng (phiếu thu tự động) và phí giao hàng thành phiếu chi tự động tính vào lãi lỗ.
+- **Tổng quan vận chuyển**: tình hình giao hàng 30 ngày, tình hình đối soát, biểu đồ số vận đơn và phí, tỷ lệ đối tác, tỷ lệ giao thành công, cảnh báo lấy/giao trễ. **Cấu hình giao hàng**: khối lượng, kích thước, yêu cầu mặc định, tự xuất kho, tự nhận hàng hoàn, số ngày cảnh báo.
+- Quyền mới `shipments.*`, `cod_reconciliations.*`, `carriers.*` (cấp cho vai trò cũ qua migration).
+- Dữ liệu mẫu đối tác, vận đơn ở mọi trạng thái, phiếu đối soát.
+
 ### G5: Khuyến mại và tích điểm
 
 - Module **Khuyến mại**: chương trình chiết khấu (theo tổng giá trị đơn, theo từng sản phẩm, sản phẩm mua thêm theo giá trị đơn, theo số lượng sản phẩm, mua sản phẩm - giảm giá sản phẩm) và tặng quà (theo tổng giá trị đơn, theo sản phẩm mua); áp dụng cho phiên bản, loại hoặc nhãn hiệu; nhiều điều kiện/mức; số lượng áp dụng tối đa; thời gian, khung giờ, ngày trong tuần/tháng; chi nhánh, nguồn đơn, nhóm khách hàng; tạm ngừng, kích hoạt, kết thúc.

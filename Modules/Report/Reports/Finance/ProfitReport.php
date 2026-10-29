@@ -110,7 +110,8 @@ class ProfitReport extends Report
             ->whereIn('branch_id', $context->branchIds)
             ->where('kind', $kind)
             ->where('status', CashVoucher::COMPLETED)
-            ->where('is_auto', false)
+            // Hand-entered vouchers marked so, and automatic ones that are
+            // an expense by nature (fees kept by a shipping partner).
             ->where('affects_profit', true)
             ->whereBetween('recorded_at', [$context->from, $context->to])
             ->sum('amount');

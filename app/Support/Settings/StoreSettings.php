@@ -51,6 +51,21 @@ class StoreSettings
         // Đồng spent for 1 point, and đồng 1 point is worth when paying.
         'loyalty.earn_amount' => 100000,
         'loyalty.redeem_value' => 1000,
+        // Vận chuyển (G6): package defaults sent to the partners.
+        // product: weight of the products in the order | custom: always default_weight.
+        'shipping.weight_mode' => 'product',
+        'shipping.default_weight' => 500,
+        'shipping.default_length' => 10,
+        'shipping.default_width' => 10,
+        'shipping.default_height' => 10,
+        'shipping.required_note' => 'CHOXEMHANGKHONGTHU',
+        'shipping.note' => null,
+        // The order is exported when the partner picks the parcel up.
+        'shipping.auto_export' => true,
+        // A parcel back at the store ("Hủy giao - đã nhận") returns to stock by itself.
+        'shipping.auto_receive_return' => false,
+        'shipping.late_pick_days' => 2,
+        'shipping.late_delivery_days' => 5,
     ];
 
     /** On/off options on the "Cấu hình bán hàng" page, grouped like Sapo. */

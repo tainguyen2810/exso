@@ -1,0 +1,9 @@
+{
+    "name": "Shipping",
+    "alias": "shipping",
+    "description": "Vận chuyển: kết nối đối tác (GHN), phiếu giao hàng, trạng thái tự cập nhật qua webhook, đối soát COD và phí.",
+    "keywords": [],
+    "priority": 80,
+    "providers": ["Modules\\Shipping\\Providers\\ShippingServiceProvider"],
+    "files": []
+}

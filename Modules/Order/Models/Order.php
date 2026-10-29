@@ -120,6 +120,7 @@ class Order extends Model
     ];
 
     public const DELIVERY_METHODS = [
+        'carrier' => 'Đẩy qua hãng vận chuyển',
         'pickup' => 'Khách nhận tại cửa hàng',
         'later' => 'Giao hàng sau',
         'external' => 'Đẩy vận chuyển ngoài',

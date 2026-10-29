@@ -14,6 +14,7 @@ use Modules\Cashbook\Services\CashbookService;
 use Modules\Customer\Models\CustomerDebt;
 use Modules\Order\Events\OrderPaymentRecorded;
 use Modules\Purchase\Events\SupplierPaymentRecorded;
+use Modules\Shipping\Events\CodReconciliationCompleted;
 
 class CashbookServiceProvider extends ServiceProvider
 {
@@ -37,6 +38,8 @@ class CashbookServiceProvider extends ServiceProvider
         // Money of orders and supplier payments become automatic vouchers.
         Event::listen(OrderPaymentRecorded::class, fn (OrderPaymentRecorded $event) => app(CashbookService::class)->recordOrderPayment($event->payment));
         Event::listen(SupplierPaymentRecorded::class, fn (SupplierPaymentRecorded $event) => app(CashbookService::class)->recordSupplierPayment($event->line));
+        // Fees kept by a shipping partner (đối soát COD) are an expense.
+        Event::listen(CodReconciliationCompleted::class, fn (CodReconciliationCompleted $event) => app(CashbookService::class)->recordCarrierFee($event->reconciliation));
 
         Hook::addFilter('store.defaults', function (mixed $value): mixed {
             // Older migrations install store defaults before this table exists.
