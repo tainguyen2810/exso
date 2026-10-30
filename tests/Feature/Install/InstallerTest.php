@@ -119,3 +119,32 @@ test('the database step shows an error when MySQL cannot be reached', function (
 
     expect(File::exists($this->marker))->toBeFalse();
 })->skip(fn () => ! app(Installer::class)->meetsRequirements(), 'Server requirements not met in this environment.');
+
+function fakeInstaller(bool $hasTables): void
+{
+    $installer = Mockery::mock(Installer::class)->makePartial();
+    $installer->shouldReceive('meetsRequirements')->andReturnTrue();
+    $installer->shouldReceive('configureDatabase')->andReturnNull();
+    $installer->shouldReceive('databaseHasTables')->andReturn($hasTables);
+    app()->instance(Installer::class, $installer);
+}
+
+dataset('mysql fields', [[['db_host' => '127.0.0.1', 'db_port' => 3306, 'db_database' => 'exso', 'db_username' => 'root', 'db_password' => '']]]);
+
+test('the database step refuses a database that already has tables', function (array $fields) {
+    fakeInstaller(hasTables: true);
+
+    $this->from('/install/database')->post('/install/database', $fields)
+        ->assertRedirect('/install/database')->assertSessionHasErrors('db_database');
+})->with('mysql fields');
+
+test('the database step continues with an empty database', function (array $fields) {
+    fakeInstaller(hasTables: false);
+
+    $this->post('/install/database', $fields)->assertRedirect('/install/store');
+})->with('mysql fields');
+
+test('mysql tables are always created with InnoDB', function () {
+    expect(config('database.connections.mysql.engine'))->toBe('InnoDB')
+        ->and(config('database.connections.mariadb.engine'))->toBe('InnoDB');
+});
