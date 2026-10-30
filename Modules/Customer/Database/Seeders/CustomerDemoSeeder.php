@@ -16,7 +16,7 @@ class CustomerDemoSeeder extends Seeder
     {
         CustomerGroup::installDefaults();
         $group = fn (string $code): ?int => CustomerGroup::query()->where('code', $code)->value('id');
-        $cashier = User::query()->where('email', 'thungan@exso.test')->value('id');
+        $cashier = User::query()->where('email', 'like', 'thungan@%')->value('id');
 
         foreach ([
             ['Nguyễn Văn An', '0901234567', 'BANLE', '12 Lê Lợi', 'Quận 1', 'Hồ Chí Minh', 'male'],

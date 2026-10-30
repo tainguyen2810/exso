@@ -23,7 +23,7 @@ class OrderDemoSeeder extends Seeder
     public function run(OrderService $orders, ReturnService $returns, PosService $pos): void
     {
         $owner = User::query()->where('is_owner', true)->firstOrFail();
-        $cashier = User::query()->where('email', 'thungan@exso.test')->firstOrFail();
+        $cashier = User::query()->where('email', 'like', 'thungan@%')->firstOrFail();
         Auth::setUser($owner);
 
         $main = (int) Branch::query()->where('is_default', true)->value('id');

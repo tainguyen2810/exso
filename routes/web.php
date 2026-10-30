@@ -20,7 +20,11 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('install', [InstallController::class, 'show'])->name('install.show');
-Route::post('install', [InstallController::class, 'store'])->name('install.store');
+Route::get('install/database', [InstallController::class, 'database'])->name('install.database');
+Route::post('install/database', [InstallController::class, 'storeDatabase'])->name('install.database.store');
+Route::get('install/store', [InstallController::class, 'store'])->name('install.store');
+Route::post('install/store', [InstallController::class, 'install'])->name('install.run')->middleware('throttle:10,1');
+Route::get('install/done', [InstallController::class, 'done'])->name('install.done');
 
 Route::redirect('/', '/dashboard')->name('home');
 
