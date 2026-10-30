@@ -21,6 +21,12 @@ class EnsureInstalled
         $isInstallRoute = $request->is('install', 'install/*');
 
         if ($this->installer->isInstalled()) {
+            // The "done" page shows once, right after installing (it checks
+            // the flashed summary itself and otherwise goes to /login).
+            if ($request->is('install/done')) {
+                return $next($request);
+            }
+
             abort_if($isInstallRoute, 404);
 
             return $next($request);

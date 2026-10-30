@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\Settings\SettingsRepository;
 use App\Support\Settings\StoreDefaults;
 use App\Tenancy\TenantContext;
+use Database\Seeders\DemoDataSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -16,6 +17,11 @@ use Throwable;
 
 class Installer
 {
+    /** Sample data accounts: demo@exso.demo, nhanvien1@exso.demo... */
+    public const DEMO_DOMAIN = 'exso.demo';
+
+    public const DEMO_LOGIN = 'demo';
+
     /**
      * .env values written only after a successful install, so a failed
      * attempt leaves the file untouched (and `artisan serve` does not
@@ -109,9 +115,11 @@ class Installer
     }
 
     /**
-     * Create the schema, the store (tenant 1) and its first admin.
+     * Create the schema, the store (tenant 1) and its first admin. With a
+     * `demo_password`, also load sample data and demo accounts that sign
+     * in with that password.
      *
-     * @param  array{store_name: string, admin_name: string, admin_email: string, admin_password: string, app_url?: string}  $data
+     * @param  array{store_name: string, admin_name: string, admin_email: string, admin_password: string, app_url?: string, demo_password?: string|null}  $data
      */
     public function install(array $data): User
     {
@@ -148,6 +156,13 @@ class Installer
 
             $admin->branches()->attach($branch);
             $admin->assignRole('Quản trị');
+
+            if (($data['demo_password'] ?? null) !== null) {
+                $seeder = app(DemoDataSeeder::class);
+                $seeder->domain = self::DEMO_DOMAIN;
+                $seeder->password = $data['demo_password'];
+                $seeder->setContainer(app())->__invoke();
+            }
 
             return $admin;
         });
