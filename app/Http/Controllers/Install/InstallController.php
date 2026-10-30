@@ -72,6 +72,11 @@ class InstallController extends Controller
                 ->withErrors(['db_host' => 'Không kết nối được MySQL: '.$e->getMessage()]);
         }
 
+        if ($this->installer->databaseHasTables()) {
+            return back()->withInput($request->except('db_password'))
+                ->withErrors(['db_database' => "Database \"{$db['database']}\" đã có bảng (có thể từ lần cài trước bị lỗi). Hãy xóa và tạo lại database trống trong phpMyAdmin, hoặc nhập tên database khác."]);
+        }
+
         $request->session()->put('install.db', $db);
 
         return redirect('/install/store');

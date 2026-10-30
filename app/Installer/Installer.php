@@ -13,6 +13,7 @@ use Database\Seeders\DemoDataSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 class Installer
@@ -112,6 +113,15 @@ class Installer
             'DB_USERNAME' => $db['username'],
             'DB_PASSWORD' => $db['password'] ?? '',
         ];
+    }
+
+    /**
+     * Whether the configured database already has tables: a previous or
+     * failed install that must be emptied before installing again.
+     */
+    public function databaseHasTables(): bool
+    {
+        return Schema::connection('mysql')->getTables() !== [];
     }
 
     /**
